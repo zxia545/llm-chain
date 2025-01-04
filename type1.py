@@ -8,17 +8,17 @@ def construct_type1_message(dataset_type, question):
     """
     if dataset_type == "Infinity-Instruct":
         return [
-            {"role": "system", "content": "You are a highly knowledgeable assistant providing detailed, contextually accurate answers to diverse user queries."},
+            {"role": "system", "content": "You are an expert assistant providing detailed, structured, and contextually rich answers. Ensure your response is comprehensive, addresses the core of the query, and enriches understanding with examples and insights."},
             {"role": "user", "content": question}
         ]
     elif dataset_type == "MAmmoTH":
         return [
-            {"role": "system", "content": "You are a mathematical problem-solving assistant. Provide step-by-step solutions and explain your reasoning clearly."},
+            {"role": "system", "content": "You are a mathematical assistant delivering step-by-step solutions. Ensure clarity in logic, detailed explanations, and illustrative examples where appropriate."},
             {"role": "user", "content": question}
         ]
     elif dataset_type == "WizardCoder":
         return [
-            {"role": "system", "content": "You are a programming assistant. Solve coding challenges, provide code implementations, and explain the logic behind them."},
+            {"role": "system", "content": "You are a coding expert solving programming challenges. Provide correct, efficient solutions with explanations for your approach."},
             {"role": "user", "content": question}
         ]
     else:

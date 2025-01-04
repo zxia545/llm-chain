@@ -54,6 +54,9 @@ def start_vllm_server(model_path: str, model_name: str, port: int, gpu: int = 1)
     ]
 
     process = subprocess.Popen(command, shell=False)
+    
+    wait_for_server(f"http://localhost:{port}", 600)
+    
     print(f"[INFO] Started vLLM server for model '{model_path}' on port {port} (GPU={gpu}).")
 
     return process
@@ -62,7 +65,7 @@ def start_vllm_server(model_path: str, model_name: str, port: int, gpu: int = 1)
 
 
 
-def wait_for_server(url: str, timeout: int = 60):
+def wait_for_server(url: str, timeout: int = 600):
     """
     Polls the server's /models endpoint until it responds with HTTP 200 or times out.
     """

@@ -32,7 +32,7 @@ def chat_completion(api_base: str, model_name: str, messages: list, max_tokens=2
     completion = client.chat.completions.create(
         model=model_name,
         messages=messages,
-        max_new_tokens=max_tokens,
+        max_tokens=max_tokens,
         temperature=temperature
     )
     return completion.choices[0].message.content

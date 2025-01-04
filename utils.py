@@ -24,6 +24,10 @@ def chat_completion(api_base: str, model_name: str, messages: list, max_tokens=2
     """
     Generic helper that uses the new openai client interface to get a chat completion.
     """
+    
+    if '/v1' not in api_base:
+        api_base = api_base + '/v1'
+    
     client = OpenAI(base_url=api_base, api_key="xxx")  # point to the local vLLM server
     completion = client.chat.completions.create(
         model=model_name,

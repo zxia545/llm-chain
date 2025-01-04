@@ -24,11 +24,11 @@ def chat_completion(api_base: str, model_name: str, messages: list, max_tokens=2
     """
     Generic helper that uses the new openai client interface to get a chat completion.
     """
-    client = OpenAI(api_base=api_base)  # point to the local vLLM server
+    client = OpenAI(base_url=api_base)  # point to the local vLLM server
     completion = client.chat.completions.create(
         model=model_name,
         messages=messages,
-        max_tokens=max_tokens,
+        max_new_tokens=max_tokens,
         temperature=temperature
     )
     return completion.choices[0].message.content
@@ -44,8 +44,7 @@ def start_vllm_server(model_path: str, model_name: str, port: int, gpu: int = 1)
     """
     # Command to activate conda environment and start the server
     command = [
-        'bash', '-c',
-        f"source activate vllm && python -m vllm.entrypoints.openai.api_server "
+        f"python -m vllm.entrypoints.openai.api_server "
         f"--model={model_path} "
         f"--served-model-name={model_name} "
         f"--tensor-parallel-size={gpu} "
@@ -60,27 +59,6 @@ def start_vllm_server(model_path: str, model_name: str, port: int, gpu: int = 1)
     return process
 
 
-
-# def start_vllm_server(model_path: str, port: int, gpu: int = 1):
-#     """
-#     Launches a vLLM OpenAI API server via subprocess.
-#     model_path: The path or name of the model you want to host
-#     port: Which port to host on
-#     gpu: The tensor-parallel-size (number of GPUs)
-#     """
-#     command = [
-#         'python', '-m', 'vllm.entrypoints.openai.api_server',
-#         f'--model={model_path}',
-#         f'--tensor-parallel-size={gpu}',
-#         f'--port={port}',
-#         '--trust-remote-code'
-#     ]
-#     process = subprocess.Popen(command)
-#     print(f"[INFO] Started vLLM server for model '{model_path}' on port {port} (GPU={gpu}).")
-
-#     # Optional: wait until server is responsive
-#     wait_for_server(f"http://localhost:{port}")
-#     return process
 
 
 

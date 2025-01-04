@@ -44,13 +44,13 @@ def start_vllm_server(model_path: str, model_name: str, port: int, gpu: int = 1)
     """
     # Command to activate conda environment and start the server
     command = [
-        f"python -m vllm.entrypoints.openai.api_server "
-        f"--model={model_path} "
-        f"--served-model-name={model_name} "
-        f"--tensor-parallel-size={gpu} "
-        f"--gpu-memory-utilization=0.85 "
-        f"--port={port} "
-        f"--trust-remote-code"
+        'python', '-m', 'vllm.entrypoints.openai.api_server',
+        f'--model={model_path}',
+        f"--served-model-name={model_name}",
+        f'--tensor-parallel-size={gpu}',
+        f"--gpu-memory-utilization=0.85",
+        f'--port={port}',
+        '--trust-remote-code'
     ]
 
     process = subprocess.Popen(command, shell=False)

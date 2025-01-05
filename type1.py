@@ -5,8 +5,7 @@ from utils import read_jsonl, write_jsonl, start_vllm_server, stop_vllm_server, 
 import logging
 import time
 
-# give logger file name
-
+# Configure logger
 logging.basicConfig(level=logging.INFO, filename=f'type1_running_{time.time()}.log', filemode='a',
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -59,13 +58,24 @@ def main():
 
     # Step 2: Prepare reading/writing
     data_list = list(read_jsonl(args.input_jsonl))
+    model_dir = os.path.join("outputs", args.model_name)
+    os.makedirs(model_dir, exist_ok=True)
+    output_file = os.path.join(model_dir, os.path.basename(args.input_jsonl))
+
+    # Load existing output JSONL if it exists
+    if os.path.exists(output_file):
+        logger.info(f"[INFO] Loading existing results from {output_file}")
+        existing_results = list(read_jsonl(output_file))
+        existing_ids = {record["idx"] for record in existing_results}
+        data_list = [record for record in data_list if record.get("idx") not in existing_ids]
+        logger.info(f"[INFO] {len(data_list)} new records will be processed.")
+    else:
+        logger.info(f"[INFO] No existing results found. Processing all records.")
+
     output_data = []
 
     # Step 3: Multithreaded processing
     api_base = f"http://localhost:{args.port}/v1"
-    model_dir = os.path.join("outputs", args.model_name)
-    os.makedirs(model_dir, exist_ok=True)
-    output_file = os.path.join(model_dir, os.path.basename(args.input_jsonl))
 
     def save_partial_results():
         if output_data:

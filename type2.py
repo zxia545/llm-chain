@@ -107,8 +107,13 @@ def process_record(api_base, llm_model_name, dataset_type, step, record):
         response = chat_completion(api_base, llm_model_name, messages, max_tokens=2048, temperature=0.7)
     except Exception as e:
         response = f"[LLM Error] {str(e)}"
-
-    result = {"idx": idx, "q": question, "a": answer, "t": doubts, "response": response}
+        
+    if step == 1:
+        result = {"idx": idx, "q": question, "a": response, "t": None}
+    elif step == 2:
+        result = {"idx": idx, "q": question, "a": answer, "t": response}
+    elif step == 3:
+        result = {"idx": idx, "q": question, "a": answer, "t": doubts, "response": response}
     return result
 
 def main():

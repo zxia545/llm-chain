@@ -11,53 +11,80 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
     if dataset_type == "Infinity-Instruct":
         if step == 1:
             return [
-                {"role": "system", "content": "You are a highly analytical and contextually aware assistant. Provide a detailed, comprehensive answer that directly addresses the query, offering examples, insights, and a structured explanation. Ensure every aspect of the query is covered with depth and clarity."},
+                {"role": "system", "content": "You are an AI assistant designed to provide accurate, clear, complete, and helpful answers to user instructions."},
                 {"role": "user", "content": question}
             ]
         elif step == 2:
             return [
-                {"role": "system", "content": "You are a critical reviewer tasked with identifying ambiguities, gaps, or areas for improvement in an answer. Question the logic, demand clarity, and suggest meaningful enhancements to ensure the answer fully satisfies the query."},
-                {"role": "user", "content": f"Question: {question}\nAnswer: {answer}\nWhat clarifications, corrections, or improvements would you suggest?"}
+                {"role": "system", "content": "You are an AI assistant. You will read the question and an answer provided by another AI assistant. If there is anything in the answer you find unclear, incomplete, or confusing, ask specific questions to better understand those parts."},
+                {"role": "user", "content": f"Question: {question}\nHere is the answer:\n{answer}\n\nPlease list any questions you have about details or reasoning you do not fully understand."}
             ]
         elif step == 3:
             return [
-                {"role": "system", "content": "You are a thoughtful and thorough assistant revising an answer based on detailed feedback. Ensure your response is precise, comprehensive, and directly addresses all highlighted concerns."},
-                {"role": "user", "content": f"Question: {question}\nPrevious Answer: {answer}\nFeedback: {doubts}\nRevise the answer to address the feedback comprehensively and clearly."}
+                {"role": "system", "content": "You are an AI assistant designed to provide accurate, clear, complete, and helpful answers to user instructions."},
+                {"role": "user", "content": question},
+                {"role": "assistant", "content": answer},
+                {"role": "user", "content": f"You are tasked with improving an answer based on the questions provided. Update and refine the original answer to address these questions clearly and effectively.\nQuestion: {question}\nPrevious Answer: {answer}\nFeedback: {doubts}\n\nPlease update the answer accordingly:"}
             ]
     elif dataset_type == "MAmmoTH":
         if step == 1:
-            return [
-                {"role": "system", "content": "You are an expert mathematician delivering a step-by-step solution. Provide clear logic, detailed explanations, and illustrative examples to ensure complete understanding."},
-                {"role": "user", "content": question}
-            ]
+            question_lower = question.lower()
+            if "program" in question_lower or "python" in question_lower:
+                return [
+                    {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations."},
+                    {"role": "user", "content": question}
+                ]
+            else:
+                return [
+                    {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations. For every question, break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."},
+                    {"role": "user", "content": question}
+                ]
         elif step == 2:
             return [
-                {"role": "system", "content": "You are a meticulous mathematical reviewer. Analyze the solution critically, highlighting logical inconsistencies, numerical errors, or unclear steps. Suggest meaningful refinements."},
-                {"role": "user", "content": f"Question: {question}\nSolution: {answer}\nIdentify any issues, errors, or areas for improvement."}
+                {"role": "system", "content": "You are an AI assistant. You will read the math problem and a solution provided by another AI assistant. If any step in the solution is unclear, lacks justification, or appears incomplete, ask specific questions to clarify or better understand those parts."},
+                {"role": "user", "content": f"Math Problem: {question}\nHere is the solution:\n{answer}\n\nPlease list your questions about the reasoning steps or details you do not fully understand."}
             ]
         elif step == 3:
-            return [
-                {"role": "system", "content": "You are a mathematical problem-solver refining solutions. Address all identified feedback, ensuring logical consistency, numerical accuracy, and clarity in your response."},
-                {"role": "user", "content": f"Question: {question}\nPrevious Solution: {answer}\nFeedback: {doubts}\nImprove the solution, addressing the feedback thoroughly."}
-            ]
+            question_lower = question.lower()
+            if "program" in question_lower or "python" in question_lower:
+                return [
+                    {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations."},
+                    {"role": "user", "content": question},
+                    {"role": "assistant", "content": answer},
+                    {"role": "user", "content": f"You are tasked with improving a math solution based on the questions provided. Refine and enhance the original solution to address these questions, ensuring accuracy, logical reasoning, and clear explanations.\nMath Problem: {question}\nPrevious Solution: {answer}\nFeedback: {doubts}\n\nPlease update the solution accordingly:"}
+                ]
+            else:
+                return [
+                    {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations. For every question, break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."},
+                    {"role": "user", "content": question},
+                    {"role": "assistant", "content": answer},
+                    {"role": "user", "content": f"You are tasked with improving a math solution based on the questions provided. Refine and enhance the original solution to address these questions, ensuring accuracy, logical reasoning, and clear explanations.\nMath Problem: {question}\nPrevious Solution: {answer}\nFeedback: {doubts}\n\nPlease update the solution accordingly:"}
+                ]
     elif dataset_type == "WizardCoder":
         if step == 1:
             return [
-                {"role": "system", "content": "You are a coding expert solving programming challenges. Provide correct, efficient, and well-explained solutions, detailing your thought process and ensuring clarity."},
+                {"role": "system", "content": "You are an expert programmer and problem solver. Your task is to provide correct, efficient, readable, and well-structured code solutions to programming problems, adhering to best coding practices throughout."},
                 {"role": "user", "content": question}
             ]
         elif step == 2:
             return [
-                {"role": "system", "content": "You are a critical code reviewer analyzing a solution. Highlight inefficiencies, logical flaws, or unclear sections. Provide actionable suggestions for improvement."},
-                {"role": "user", "content": f"Problem: {question}\nCode: {answer}\nWhat corrections, optimizations, or clarifications do you recommend?"}
+                {"role": "system", "content": "You are an AI assistant. You will read the programming problem and a proposed code solution. If there is any part of the solution or its reasoning you find unclear or confusing, ask specific questions to clarify those parts."},
+                {"role": "user", "content": f"Programming Problem: {question}\nHere is the code solution:\n{answer}\n\nPlease list your questions about any unclear logic, implementation detail, or part of the solution you do not fully understand."}
             ]
         elif step == 3:
             return [
-                {"role": "system", "content": "You are a programming expert refining code. Implement corrections and optimizations, ensuring the code is efficient, accurate, and easy to understand."},
-                {"role": "user", "content": f"Problem: {question}\nPrevious Code: {answer}\nFeedback: {doubts}\nRefactor and enhance the code based on the feedback."}
+                {"role": "system", "content": "You are an expert programmer and problem solver. Your task is to provide correct, efficient, readable, and well-structured code solutions to programming problems, adhering to best coding practices throughout."},
+                {"role": "user", "content": question},
+                {"role": "assistant", "content": answer},
+                {"role": "user", "content": f"You are tasked with improving a code solution based on the questions provided. Refactor, correct, or enhance the code to address these questions, ensuring it is correct, efficient, readable, and adheres to best practices.\nProgramming Problem: {question}\nPrevious Code Solution: {answer}\nFeedback: {doubts}\n\nPlease update the code solution accordingly."}
             ]
     else:
         raise ValueError(f"Unsupported dataset type: {dataset_type}")
+
+def save_partial_results(file_path, data, append=False):
+    if data:
+        write_jsonl(file_path, data, append=append)
+        data.clear()
 
 def main():
     parser = argparse.ArgumentParser()
@@ -72,12 +99,13 @@ def main():
 
     # Step 1: q -> LLM1 -> a
     print("[INFO] Step1: q -> LLM1 -> a")
-    process_llm1_step1 = start_vllm_server(args.llm1_model, args.port1, args.gpu)
-
+    process_llm1 = start_vllm_server(args.llm1_model, args.port1, args.gpu)
     data_list = list(read_jsonl(args.input_jsonl))
+    step1_file = f"outputs/type2_step1_{os.path.basename(args.input_jsonl)}"
     step1_data = []
     api_base_llm1 = f"http://localhost:{args.port1}"
-    for record in data_list:
+
+    for i, record in enumerate(data_list, start=1):
         q = record["input"]
         idx = record.get("idx", None)
         messages = construct_messages(args.dataset_type, step=1, question=q)
@@ -87,19 +115,21 @@ def main():
             a = f"[LLM1 Error] {str(e)}"
         step1_data.append({"idx": idx, "q": q, "a": a})
 
-    step1_file = os.path.join("outputs", f"type2_step1_{os.path.basename(args.input_jsonl)}")
-    write_jsonl(step1_file, step1_data)
-    print(f"[INFO] Step1 output saved to {step1_file}")
-    stop_vllm_server(process_llm1_step1)
+        if i % 2000 == 0:
+            save_partial_results(step1_file, step1_data, append=True)
+
+    save_partial_results(step1_file, step1_data, append=True)
+    stop_vllm_server(process_llm1)
 
     # Step 2: <q, a> -> LLM2 -> t
     print("[INFO] Step2: <q, a> -> LLM2 -> t")
     process_llm2 = start_vllm_server(args.llm2_model, args.port2, args.gpu)
-
+    step2_file = f"outputs/type2_step2_{os.path.basename(args.input_jsonl)}"
     step2_data = []
     step1_data_reloaded = list(read_jsonl(step1_file))
     api_base_llm2 = f"http://localhost:{args.port2}"
-    for record in step1_data_reloaded:
+
+    for i, record in enumerate(step1_data_reloaded, start=1):
         q = record["q"]
         a = record["a"]
         idx = record["idx"]
@@ -110,18 +140,20 @@ def main():
             t = f"[LLM2 Error] {str(e)}"
         step2_data.append({"idx": idx, "q": q, "a": a, "t": t})
 
-    step2_file = os.path.join("outputs", f"type2_step2_{os.path.basename(args.input_jsonl)}")
-    write_jsonl(step2_file, step2_data)
-    print(f"[INFO] Step2 output saved to {step2_file}")
+        if i % 2000 == 0:
+            save_partial_results(step2_file, step2_data, append=True)
+
+    save_partial_results(step2_file, step2_data, append=True)
     stop_vllm_server(process_llm2)
 
     # Step 3: <q, a, t> -> LLM1 -> a'
     print("[INFO] Step3: <q, a, t> -> LLM1 -> a'")
     process_llm1_step3 = start_vllm_server(args.llm1_model, args.port1, args.gpu)
+    step3_file = f"outputs/type2_step3_{os.path.basename(args.input_jsonl)}"
     step3_data = []
     step2_data_reloaded = list(read_jsonl(step2_file))
 
-    for record in step2_data_reloaded:
+    for i, record in enumerate(step2_data_reloaded, start=1):
         q = record["q"]
         a = record["a"]
         t = record["t"]
@@ -133,9 +165,10 @@ def main():
             a_prime = f"[LLM1 Error] {str(e)}"
         step3_data.append({"idx": idx, "q": q, "a_prime": a_prime})
 
-    step3_file = os.path.join("outputs", f"type2_step3_{os.path.basename(args.input_jsonl)}")
-    write_jsonl(step3_file, step3_data)
-    print(f"[INFO] Step3 (final) output saved to {step3_file}")
+        if i % 2000 == 0:
+            save_partial_results(step3_file, step3_data, append=True)
+
+    save_partial_results(step3_file, step3_data, append=True)
     stop_vllm_server(process_llm1_step3)
 
     print("[INFO] Type2 pipeline complete.")

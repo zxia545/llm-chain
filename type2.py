@@ -96,7 +96,7 @@ def save_partial_results(file_path, data, append=False):
         data.clear()
         
         
-def process_record(api_base, llm_model, dataset_type, step, record):
+def process_record(api_base, llm_model_name, dataset_type, step, record):
     question = record.get("q", record.get("input"))
     answer = record.get("a", None)
     doubts = record.get("t", None)
@@ -104,7 +104,7 @@ def process_record(api_base, llm_model, dataset_type, step, record):
 
     try:
         messages = construct_messages(dataset_type, step, question=question, answer=answer, doubts=doubts)
-        response = chat_completion(api_base, llm_model, messages, max_tokens=2048, temperature=0.7)
+        response = chat_completion(api_base, llm_model_name, messages, max_tokens=2048, temperature=0.7)
     except Exception as e:
         response = f"[LLM Error] {str(e)}"
 
@@ -117,6 +117,8 @@ def main():
     parser.add_argument("--input_jsonl", type=str, required=True, help="Original Q input JSONL.")
     parser.add_argument("--llm1_model", type=str, required=True, help="Model path for LLM1.")
     parser.add_argument("--llm2_model", type=str, required=True, help="Model path for LLM2.")
+    parser.add_argument("--llm1_name", type=str, default="LLM1", help="Name for LLM1.")
+    parser.add_argument("--llm2_name", type=str, default="LLM2", help="Name for LLM2.")
     parser.add_argument("--port1", type=int, default=8000, help="Port for LLM1.")
     parser.add_argument("--port2", type=int, default=8001, help="Port for LLM2.")
     parser.add_argument("--gpu", type=int, default=1, help="Number of GPUs.")
@@ -125,14 +127,14 @@ def main():
 
     # Step 1: q -> LLM1 -> a
     print("[INFO] Step1: q -> LLM1 -> a")
-    process_llm1 = start_vllm_server(args.llm1_model, args.port1, args.gpu)
+    process_llm1 = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
     data_list = list(read_jsonl(args.input_jsonl))
     step1_file = f"outputs/type2_step1_{os.path.basename(args.input_jsonl)}"
     step1_data = []
     api_base_llm1 = f"http://localhost:{args.port1}"
 
     with ThreadPoolExecutor(max_workers=args.threads) as executor:
-        futures = [executor.submit(process_record, api_base_llm1, args.llm1_model, args.dataset_type, 1, record) for record in data_list]
+        futures = [executor.submit(process_record, api_base_llm1, args.llm1_name, args.dataset_type, 1, record) for record in data_list]
         for i, future in enumerate(futures, start=1):
             step1_data.append(future.result())
             if i % 2000 == 0:
@@ -143,14 +145,14 @@ def main():
 
     # Step 2: <q, a> -> LLM2 -> t
     print("[INFO] Step2: <q, a> -> LLM2 -> t")
-    process_llm2 = start_vllm_server(args.llm2_model, args.port2, args.gpu)
+    process_llm2 = start_vllm_server(args.llm2_model, args.llm2_name, args.port2, args.gpu)
     step2_file = f"outputs/type2_step2_{os.path.basename(args.input_jsonl)}"
     step2_data = []
     step1_data_reloaded = list(read_jsonl(step1_file))
     api_base_llm2 = f"http://localhost:{args.port2}"
 
     with ThreadPoolExecutor(max_workers=args.threads) as executor:
-        futures = [executor.submit(process_record, api_base_llm2, args.llm2_model, args.dataset_type, 2, record) for record in step1_data_reloaded]
+        futures = [executor.submit(process_record, api_base_llm2, args.llm2_name, args.dataset_type, 2, record) for record in step1_data_reloaded]
         for i, future in enumerate(futures, start=1):
             step2_data.append(future.result())
             if i % 2000 == 0:
@@ -161,13 +163,13 @@ def main():
 
     # Step 3: <q, a, t> -> LLM1 -> a'
     print("[INFO] Step3: <q, a, t> -> LLM1 -> a'")
-    process_llm1_step3 = start_vllm_server(args.llm1_model, args.port1, args.gpu)
+    process_llm1_step3 = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
     step3_file = f"outputs/type2_step3_{os.path.basename(args.input_jsonl)}"
     step3_data = []
     step2_data_reloaded = list(read_jsonl(step2_file))
 
     with ThreadPoolExecutor(max_workers=args.threads) as executor:
-        futures = [executor.submit(process_record, api_base_llm1, args.llm1_model, args.dataset_type, 3, record) for record in step2_data_reloaded]
+        futures = [executor.submit(process_record, api_base_llm1, args.llm1_name, args.dataset_type, 3, record) for record in step2_data_reloaded]
         for i, future in enumerate(futures, start=1):
             step3_data.append(future.result())
             if i % 2000 == 0:

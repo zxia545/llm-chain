@@ -1,7 +1,16 @@
 import argparse
 import os
 from utils import read_jsonl, write_jsonl, start_vllm_server, stop_vllm_server, chat_completion
+from concurrent.futures import ThreadPoolExecutor
+import time 
+import logging
 
+
+logging.basicConfig(level=logging.INFO, filename=f'type1_running_{time.time()}.log', filemode='a',
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+logger.info("Starting the script...")
 def construct_messages(dataset_type, step, question=None, answer=None, doubts=None):
     """
     Construct role-based messages for LLM interactions based on dataset type and step.
@@ -85,6 +94,22 @@ def save_partial_results(file_path, data, append=False):
     if data:
         write_jsonl(file_path, data, append=append)
         data.clear()
+        
+        
+def process_record(api_base, llm_model, dataset_type, step, record):
+    question = record.get("q", record.get("input"))
+    answer = record.get("a", None)
+    doubts = record.get("t", None)
+    idx = record.get("idx", None)
+
+    try:
+        messages = construct_messages(dataset_type, step, question=question, answer=answer, doubts=doubts)
+        response = chat_completion(api_base, llm_model, messages, max_tokens=2048, temperature=0.7)
+    except Exception as e:
+        response = f"[LLM Error] {str(e)}"
+
+    result = {"idx": idx, "q": question, "a": answer, "t": doubts, "response": response}
+    return result
 
 def main():
     parser = argparse.ArgumentParser()
@@ -95,6 +120,7 @@ def main():
     parser.add_argument("--port1", type=int, default=8000, help="Port for LLM1.")
     parser.add_argument("--port2", type=int, default=8001, help="Port for LLM2.")
     parser.add_argument("--gpu", type=int, default=1, help="Number of GPUs.")
+    parser.add_argument("--threads", type=int, default=8, help="Number of threads for concurrent processing.")
     args = parser.parse_args()
 
     # Step 1: q -> LLM1 -> a
@@ -105,18 +131,12 @@ def main():
     step1_data = []
     api_base_llm1 = f"http://localhost:{args.port1}"
 
-    for i, record in enumerate(data_list, start=1):
-        q = record["input"]
-        idx = record.get("idx", None)
-        messages = construct_messages(args.dataset_type, step=1, question=q)
-        try:
-            a = chat_completion(api_base_llm1, args.llm1_model, messages, max_tokens=256, temperature=0.2)
-        except Exception as e:
-            a = f"[LLM1 Error] {str(e)}"
-        step1_data.append({"idx": idx, "q": q, "a": a})
-
-        if i % 2000 == 0:
-            save_partial_results(step1_file, step1_data, append=True)
+    with ThreadPoolExecutor(max_workers=args.threads) as executor:
+        futures = [executor.submit(process_record, api_base_llm1, args.llm1_model, args.dataset_type, 1, record) for record in data_list]
+        for i, future in enumerate(futures, start=1):
+            step1_data.append(future.result())
+            if i % 2000 == 0:
+                save_partial_results(step1_file, step1_data, append=True)
 
     save_partial_results(step1_file, step1_data, append=True)
     stop_vllm_server(process_llm1)
@@ -129,19 +149,12 @@ def main():
     step1_data_reloaded = list(read_jsonl(step1_file))
     api_base_llm2 = f"http://localhost:{args.port2}"
 
-    for i, record in enumerate(step1_data_reloaded, start=1):
-        q = record["q"]
-        a = record["a"]
-        idx = record["idx"]
-        messages = construct_messages(args.dataset_type, step=2, question=q, answer=a)
-        try:
-            t = chat_completion(api_base_llm2, args.llm2_model, messages, max_tokens=256, temperature=0.2)
-        except Exception as e:
-            t = f"[LLM2 Error] {str(e)}"
-        step2_data.append({"idx": idx, "q": q, "a": a, "t": t})
-
-        if i % 2000 == 0:
-            save_partial_results(step2_file, step2_data, append=True)
+    with ThreadPoolExecutor(max_workers=args.threads) as executor:
+        futures = [executor.submit(process_record, api_base_llm2, args.llm2_model, args.dataset_type, 2, record) for record in step1_data_reloaded]
+        for i, future in enumerate(futures, start=1):
+            step2_data.append(future.result())
+            if i % 2000 == 0:
+                save_partial_results(step2_file, step2_data, append=True)
 
     save_partial_results(step2_file, step2_data, append=True)
     stop_vllm_server(process_llm2)
@@ -153,20 +166,12 @@ def main():
     step3_data = []
     step2_data_reloaded = list(read_jsonl(step2_file))
 
-    for i, record in enumerate(step2_data_reloaded, start=1):
-        q = record["q"]
-        a = record["a"]
-        t = record["t"]
-        idx = record["idx"]
-        messages = construct_messages(args.dataset_type, step=3, question=q, answer=a, doubts=t)
-        try:
-            a_prime = chat_completion(api_base_llm1, args.llm1_model, messages, max_tokens=256, temperature=0.2)
-        except Exception as e:
-            a_prime = f"[LLM1 Error] {str(e)}"
-        step3_data.append({"idx": idx, "q": q, "a_prime": a_prime})
-
-        if i % 2000 == 0:
-            save_partial_results(step3_file, step3_data, append=True)
+    with ThreadPoolExecutor(max_workers=args.threads) as executor:
+        futures = [executor.submit(process_record, api_base_llm1, args.llm1_model, args.dataset_type, 3, record) for record in step2_data_reloaded]
+        for i, future in enumerate(futures, start=1):
+            step3_data.append(future.result())
+            if i % 2000 == 0:
+                save_partial_results(step3_file, step3_data, append=True)
 
     save_partial_results(step3_file, step3_data, append=True)
     stop_vllm_server(process_llm1_step3)

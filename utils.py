@@ -14,11 +14,15 @@ def read_jsonl(file_path):
             if line.strip():
                 yield json.loads(line)
 
-def write_jsonl(file_path, data_list):
-    with open(file_path, 'w', encoding='utf-8') as f:
+def write_jsonl(file_path, data_list, append=False):
+    """
+    Writes a list of dictionaries to a JSONL file.
+    If append is True, appends the data to the file instead of overwriting it.
+    """
+    mode = 'a' if append else 'w'
+    with open(file_path, mode, encoding='utf-8') as f:
         for item in data_list:
             f.write(json.dumps(item, ensure_ascii=False) + '\n')
-
 
 def chat_completion(api_base: str, model_name: str, messages: list, max_tokens=256, temperature=0.7):
     """

@@ -1,6 +1,17 @@
 import argparse
 import os
+from concurrent.futures import ThreadPoolExecutor
 from utils import read_jsonl, write_jsonl, start_vllm_server, stop_vllm_server, chat_completion
+import logging
+import time
+
+# give logger file name
+
+logging.basicConfig(level=logging.INFO, filename=f'type1_running_{time.time()}.log', filemode='a',
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+logger.info("Starting the script...")
 
 def construct_type1_message(dataset_type, question):
     """
@@ -8,17 +19,24 @@ def construct_type1_message(dataset_type, question):
     """
     if dataset_type == "Infinity-Instruct":
         return [
-            {"role": "system", "content": "You are an expert assistant providing detailed, structured, and contextually rich answers. Ensure your response is comprehensive, addresses the core of the query, and enriches understanding with examples and insights."},
+            {"role": "system", "content": "You are an AI assistant designed to provide accurate, clear, complete, and helpful answers to user instructions."},
             {"role": "user", "content": question}
         ]
     elif dataset_type == "MAmmoTH":
-        return [
-            {"role": "system", "content": "You are a mathematical assistant delivering step-by-step solutions. Ensure clarity in logic, detailed explanations, and illustrative examples where appropriate."},
-            {"role": "user", "content": question}
-        ]
+        question_lower = question.lower()
+        if "program" in question_lower or "python" in question_lower:
+            return [
+                {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations."},
+                {"role": "user", "content": question}
+            ]
+        else:
+            return [
+                {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations. For every question, break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."},
+                {"role": "user", "content": question}
+            ]
     elif dataset_type == "WizardCoder":
         return [
-            {"role": "system", "content": "You are a coding expert solving programming challenges. Provide correct, efficient solutions with explanations for your approach."},
+            {"role": "system", "content": "You are an expert programmer and problem solver. Your task is to provide correct, efficient, readable, and well-structured code solutions to programming problems, adhering to best coding practices throughout."},
             {"role": "user", "content": question}
         ]
     else:
@@ -33,6 +51,7 @@ def main():
     parser.add_argument("--gpu", type=int, default=1, help="Number of GPUs for tensor parallel.")
     parser.add_argument("--port", type=int, default=8000, help="Port for the vLLM server.")
     parser.add_argument("--input_jsonl", type=str, required=True, help="Path to the input JSONL file.")
+    parser.add_argument("--threads", type=int, default=8, help="Number of threads for concurrent processing.")
     args = parser.parse_args()
 
     # Step 1: Start vLLM server for the chosen model
@@ -42,30 +61,48 @@ def main():
     data_list = list(read_jsonl(args.input_jsonl))
     output_data = []
 
-    # Step 3: Process each record and call the model
-    api_base = f"http://localhost:{args.port}"
-    for record in data_list:
+    # Step 3: Multithreaded processing
+    api_base = f"http://localhost:{args.port}/v1"
+    model_dir = os.path.join("outputs", args.model_name)
+    os.makedirs(model_dir, exist_ok=True)
+    output_file = os.path.join(model_dir, os.path.basename(args.input_jsonl))
+
+    def save_partial_results():
+        if output_data:
+            write_jsonl(output_file, output_data, append=True)
+            output_data.clear()
+
+    def process_record(record):
         question = record["input"]
         idx = record.get("idx", None)
 
         try:
             messages = construct_type1_message(args.dataset_type, question)
-            answer = chat_completion(api_base, args.model_name, messages, max_tokens=256, temperature=0.2)
+            logger.info(f"[INFO] Processing record {idx}...")
+            answer = chat_completion(api_base, args.model_name, messages, max_tokens=2048, temperature=0.7)
         except Exception as e:
             answer = f"[Error calling LLM] {str(e)}"
+            logger.error(f"[ERROR] Failed to process record {idx}: {str(e)}")
+        
+        logger.info(f"[INFO] Completed record {idx}.")
+        return {"idx": idx, "input": question, "output": answer}
 
-        output_data.append({
-            "idx": idx,
-            "input": question,
-            "output": answer
-        })
+    with ThreadPoolExecutor(max_workers=args.threads) as executor:
+        futures = [executor.submit(process_record, record) for record in data_list]
+        pre_time = time.time()
+        for i, future in enumerate(futures, start=1):
+            output_data.append(future.result())
+            # Save intermediate results every 2000 records
+            if i % 2000 == 0:
+                current_time = time.time()
+                save_partial_results()
+                logger.warning(f"[INFO] Processed {i} records in {current_time - pre_time:.2f}s.")
+                pre_time = current_time
 
-    # Step 4: Write results to output directory
-    model_dir = os.path.join("outputs", args.model_name)
-    os.makedirs(model_dir, exist_ok=True)
-    output_file = os.path.join(model_dir, os.path.basename(args.input_jsonl))
-    write_jsonl(output_file, output_data)
-    print(f"[INFO] Output saved to {output_file}")
+    # Save any remaining records
+    save_partial_results()
+
+    logger.info(f"[INFO] Output saved to {output_file}")
 
     # Step 5: Stop the server
     stop_vllm_server(process)

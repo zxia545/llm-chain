@@ -19,7 +19,7 @@ def construct_messages(dataset_type, step, question=None, std_answer=None, doubt
         elif step == 2:
             return [
                 {"role": "system", "content": "You are an AI assistant. You are tasked with rewriting a correct and high-quality answer based on the questions provided. Refine or expand the original answer to address these questions clearly and effectively."},
-                {"role": "user", "content": f"Question: {question}\nPrevious Answer (correct and high-quality): {std_answer}\nFeedback: {doubts}\n\nStructure your response with 'Explanation:' followed by the explanation and 'Answer:' followed by the updated answer\nPlease rewrite the answer accordingly:"}
+                {"role": "user", "content": f"Question: {question}\nPrevious Answer (correct and high-quality): {std_answer}\nFeedback: {doubts}\n\nStructure your response in two sections: 'Addressing_Feedback:' followed by detailed responses to the feedback, and 'Final_Answer:' with the updated and improved answer.\nPlease rewrite the answer accordingly:"}
             ]
     elif dataset_type == "MAmmoTH":
         if step == 1:
@@ -30,7 +30,7 @@ def construct_messages(dataset_type, step, question=None, std_answer=None, doubt
         elif step == 2:
             return [
                 {"role": "system", "content": "You are a mathematician and educator. You are tasked with rewriting a correct and high-quality math solution based on the questions provided. Refine and enhance the original solution to address these questions, ensuring accuracy, logical reasoning, and clear explanations."},
-                {"role": "user", "content": f"Math Problem: {question}\nPrevious Solution (correct and high-quality): {std_answer}\nFeedback: {doubts}\n\nStructure your response with 'Explanation:' followed by the explanation and 'Answer:' followed by the updated solution.\nPlease rewrite the solution accordingly:"}
+                {"role": "user", "content": f"Math Problem: {question}\nPrevious Solution (correct and high-quality): {std_answer}\nFeedback: {doubts}\n\nStructure your response into two sections: 'Addressing_Feedback:' followed by responses to the feedback and 'Final_Solution:' with the refined and accurate solution.\nPlease rewrite the solution accordingly:"}
             ]
     elif dataset_type == "WizardCoder":
         if step == 1:
@@ -41,7 +41,7 @@ def construct_messages(dataset_type, step, question=None, std_answer=None, doubt
         elif step == 2:
             return [
                 {"role": "system", "content": "You are an expert programmer. You are tasked with rewriting a correct and high-quality code solution based on the questions provided. Refactor, clarify, or enhance the code to address these questions, ensuring it is correct, efficient, readable, and adheres to best practices."},
-                {"role": "user", "content": f"Programming Problem: {question}\nPrevious Code Solution (correct and high-quality): {std_answer}\nFeedback: {doubts}\n\nStructure your response with 'Explanation:' followed by the explanation and 'Code:' followed by the updated code solution.\nPlease rewrite the code solution accordingly:"}
+                {"role": "user", "content": f"Programming Problem: {question}\nPrevious Code Solution (correct and high-quality): {std_answer}\nFeedback: {doubts}\n\n Structure your response into two sections: 'Addressing_Feedback:' with detailed responses to the feedback, and 'Refactored_Code:' with the final improved code solution.\nPlease rewrite the code solution accordingly:"}
             ]
     else:
         raise ValueError(f"Unsupported dataset type: {dataset_type}")

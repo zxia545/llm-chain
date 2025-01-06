@@ -33,7 +33,7 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
                 {"role": "system", "content": "You are an AI assistant designed to provide accurate, clear, complete, and helpful answers to user instructions."},
                 {"role": "user", "content": question},
                 {"role": "assistant", "content": answer},
-                {"role": "user", "content": f"You are tasked with improving an answer based on the questions provided. Update and refine the original answer to address these questions clearly and effectively.\nQuestion: {question}\nPrevious Answer: {answer}\nFeedback: {doubts}\n\nStructure your response with 'Explanation:' followed by the explanation and 'Answer:' followed by the updated answer.\nPlease update the answer accordingly:"}
+                {"role": "user", "content": f"You are tasked with improving an answer based on the questions provided. Update and refine the original answer to address these questions clearly and effectively.\nQuestion: {question}\nPrevious Answer: {answer}\nFeedback: {doubts}\n\nStructure your response in two sections: 'Addressing_Feedback:' followed by detailed responses to the feedback, and 'Final_Answer:' with the updated and improved answer.\nPlease update the answer accordingly:"}
             ]
     elif dataset_type == "MAmmoTH":
         if step == 1:
@@ -60,14 +60,14 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
                     {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations."},
                     {"role": "user", "content": question},
                     {"role": "assistant", "content": answer},
-                    {"role": "user", "content": f"You are tasked with improving a math solution based on the questions provided. Refine and enhance the original solution to address these questions, ensuring accuracy, logical reasoning, and clear explanations.\nMath Problem: {question}\nPrevious Solution: {answer}\nFeedback: {doubts}\n\nStructure your response with 'Explanation:' followed by the explanation and 'Answer:' followed by the updated solution.\nPlease update the solution accordingly:"}
+                    {"role": "user", "content": f"You are tasked with improving a math solution based on the questions provided. Refine and enhance the original solution to address these questions, ensuring accuracy, logical reasoning, and clear explanations.\nMath Problem: {question}\nPrevious Solution: {answer}\nFeedback: {doubts}\n\nStructure your response into two sections: 'Addressing_Feedback:' followed by responses to the feedback and 'Final_Solution:' with the refined and accurate solution.\nPlease update the solution accordingly:"}
                 ]
             else:
                 return [
                     {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations. For every question, break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."},
                     {"role": "user", "content": question},
                     {"role": "assistant", "content": answer},
-                    {"role": "user", "content": f"You are tasked with improving a math solution based on the questions provided. Refine and enhance the original solution to address these questions, ensuring accuracy, logical reasoning, and clear explanations.\nMath Problem: {question}\nPrevious Solution: {answer}\nFeedback: {doubts}\n\nStructure your response with 'Explanation:' followed by the explanation and 'Answer:' followed by the updated solution.\nPlease update the solution accordingly:"}
+                    {"role": "user", "content": f"You are tasked with improving a math solution based on the questions provided. Refine and enhance the original solution to address these questions, ensuring accuracy, logical reasoning, and clear explanations.\nMath Problem: {question}\nPrevious Solution: {answer}\nFeedback: {doubts}\n\nStructure your response into two sections: 'Addressing_Feedback:' followed by responses to the feedback and 'Final_Solution:' with the refined and accurate solution.\nPlease update the solution accordingly:"}
                 ]
     elif dataset_type == "WizardCoder":
         if step == 1:
@@ -85,7 +85,7 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
                 {"role": "system", "content": "You are an expert programmer and problem solver. Your task is to provide correct, efficient, readable, and well-structured code solutions to programming problems, adhering to best coding practices throughout."},
                 {"role": "user", "content": question},
                 {"role": "assistant", "content": answer},
-                {"role": "user", "content": f"You are tasked with improving a code solution based on the questions provided. Refactor, correct, or enhance the code to address these questions, ensuring it is correct, efficient, readable, and adheres to best practices.\nProgramming Problem: {question}\nPrevious Code Solution: {answer}\nFeedback: {doubts}\n\nStructure your response with 'Explanation:' followed by the explanation and 'Code:' followed by the updated code solution.\nPlease update the code solution accordingly."}
+                {"role": "user", "content": f"You are tasked with improving a code solution based on the questions provided. Refactor, correct, or enhance the code to address these questions, ensuring it is correct, efficient, readable, and adheres to best practices.\nProgramming Problem: {question}\nPrevious Code Solution: {answer}\nFeedback: {doubts}\n\nStructure your response into two sections: 'Addressing_Feedback:' with detailed responses to the feedback, and 'Refactored_Code:' with the final improved code solution.\nPlease update the code solution accordingly."}
             ]
     else:
         raise ValueError(f"Unsupported dataset type: {dataset_type}")

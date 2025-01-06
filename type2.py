@@ -116,6 +116,19 @@ def process_record(api_base, llm_model_name, dataset_type, step, record):
         result = {"idx": idx, "q": question, "a": answer, "t": doubts, "response": response}
     return result
 
+def refine_list(data_list, jsonl_path):
+    # Load existing output JSONL if it exists
+    if os.path.exists(jsonl_path):
+        logger.info(f"[INFO] Loading existing results from {jsonl_path}")
+        existing_results = list(read_jsonl(jsonl_path))
+        existing_ids = {record["idx"] for record in existing_results}
+        data_list = [record for record in data_list if record.get("idx") not in existing_ids]
+        logger.info(f"[INFO] {len(data_list)} new records will be processed.")
+    else:
+        logger.info(f"[INFO] No existing results found. Processing all records.")
+    return data_list
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset_type", type=str, required=True, choices=["Infinity-Instruct", "MAmmoTH", "WizardCoder"], help="Type of dataset being processed.")
@@ -134,9 +147,13 @@ def main():
     print("[INFO] Step1: q -> LLM1 -> a")
     process_llm1 = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
     data_list = list(read_jsonl(args.input_jsonl))
-    step1_file = f"outputs/type2_step1_{os.path.basename(args.input_jsonl)}"
+    
+    step1_file = f"outputs/{args.llm1_name}/type2_step1_{os.path.basename(args.input_jsonl)}"
     step1_data = []
     api_base_llm1 = f"http://localhost:{args.port1}"
+    
+    # Load existing output JSONL if it exists
+    data_list = refine_list(data_list, step1_file)
 
     with ThreadPoolExecutor(max_workers=args.threads) as executor:
         futures = [executor.submit(process_record, api_base_llm1, args.llm1_name, args.dataset_type, 1, record) for record in data_list]
@@ -151,11 +168,13 @@ def main():
     # Step 2: <q, a> -> LLM2 -> t
     print("[INFO] Step2: <q, a> -> LLM2 -> t")
     process_llm2 = start_vllm_server(args.llm2_model, args.llm2_name, args.port2, args.gpu)
-    step2_file = f"outputs/type2_step2_{os.path.basename(args.input_jsonl)}"
+    step2_file = f"outputs//{args.llm1_name}/type2_step2_{os.path.basename(args.input_jsonl)}"
     step2_data = []
     step1_data_reloaded = list(read_jsonl(step1_file))
     api_base_llm2 = f"http://localhost:{args.port2}"
-
+    
+    # Load existing output JSONL if it exists
+    step1_data_reloaded = refine_list(step1_data_reloaded, step2_file)
     with ThreadPoolExecutor(max_workers=args.threads) as executor:
         futures = [executor.submit(process_record, api_base_llm2, args.llm2_name, args.dataset_type, 2, record) for record in step1_data_reloaded]
         for i, future in enumerate(futures, start=1):
@@ -169,10 +188,12 @@ def main():
     # Step 3: <q, a, t> -> LLM1 -> a'
     print("[INFO] Step3: <q, a, t> -> LLM1 -> a'")
     process_llm1_step3 = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
-    step3_file = f"outputs/type2_step3_{os.path.basename(args.input_jsonl)}"
+    step3_file = f"outputs//{args.llm1_name}/type2_step3_{os.path.basename(args.input_jsonl)}"
     step3_data = []
     step2_data_reloaded = list(read_jsonl(step2_file))
 
+    # Load existing output JSONL if it exists
+    step2_data_reloaded = refine_list(step2_data_reloaded, step3_file)
     with ThreadPoolExecutor(max_workers=args.threads) as executor:
         futures = [executor.submit(process_record, api_base_llm1, args.llm1_name, args.dataset_type, 3, record) for record in step2_data_reloaded]
         for i, future in enumerate(futures, start=1):

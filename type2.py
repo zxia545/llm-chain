@@ -168,7 +168,7 @@ def main():
     # Step 2: <q, a> -> LLM2 -> t
     print("[INFO] Step2: <q, a> -> LLM2 -> t")
     process_llm2 = start_vllm_server(args.llm2_model, args.llm2_name, args.port2, args.gpu)
-    step2_file = f"outputs//{args.llm1_name}/type2_step2_{os.path.basename(args.input_jsonl)}"
+    step2_file = f"outputs/{args.llm1_name}/type2_step2_{os.path.basename(args.input_jsonl)}"
     step2_data = []
     step1_data_reloaded = list(read_jsonl(step1_file))
     api_base_llm2 = f"http://localhost:{args.port2}"
@@ -188,7 +188,7 @@ def main():
     # Step 3: <q, a, t> -> LLM1 -> a'
     print("[INFO] Step3: <q, a, t> -> LLM1 -> a'")
     process_llm1_step3 = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
-    step3_file = f"outputs//{args.llm1_name}/type2_step3_{os.path.basename(args.input_jsonl)}"
+    step3_file = f"outputs/{args.llm1_name}/type2_step3_{os.path.basename(args.input_jsonl)}"
     step3_data = []
     step2_data_reloaded = list(read_jsonl(step2_file))
 

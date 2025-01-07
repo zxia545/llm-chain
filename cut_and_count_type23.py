@@ -54,7 +54,9 @@ def process_jsonl(input_file, output_file, dataset_type):
 
     # Print failure statistics
     failure_rate = (fail_count / total_count) * 100 if total_count else 0
-    print(f"Processing complete. Failed to split {fail_count} out of {total_count} responses ({failure_rate:.2f}%).")
+    
+    input_file_name = input_file.split("/")[-1]
+    print(f"Processing complete. \nFor jsonl File{input_file_name}: \nFailed to split {fail_count} out of {total_count} responses ({failure_rate:.2f}%).")
 
 if __name__ == "__main__":
     import argparse

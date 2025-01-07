@@ -72,7 +72,7 @@ def process_record(api_base, llm_model, dataset_type, step, record):
 
     try:
         messages = construct_messages(dataset_type, step, question=question, std_answer=std_answer, doubts=doubts)
-        response = chat_completion(api_base, llm_model, messages, max_tokens=256, temperature=0.2)
+        response = chat_completion(api_base, llm_model, messages, max_tokens=2048, temperature=0.7)
     except Exception as e:
         response = f"[LLM Error] {str(e)}"
         

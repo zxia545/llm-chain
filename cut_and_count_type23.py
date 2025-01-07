@@ -38,6 +38,11 @@ def process_jsonl(input_file, output_file, dataset_type):
             while cut_position < len(response) and response[cut_position] in [":", " ", "\n"]:
                 cut_position += 1
             refined_response = response[cut_position:].strip()
+            processed_data.append({
+                "idx": idx,
+                "input": question,
+                "output": refined_response
+            })
         else:
             refined_response = response.strip()  # Keep the entire response if no keyword is found
             fail_count += 1
@@ -55,11 +60,6 @@ def process_jsonl(input_file, output_file, dataset_type):
                 "output": response
             })
 
-        processed_data.append({
-            "idx": idx,
-            "input": question,
-            "output": refined_response
-        })
         
     output_file_name = output_file.split("/")[-1]
     path_to_output = "/".join(output_file.split("/")[:-1])

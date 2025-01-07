@@ -6,7 +6,7 @@ import time
 import logging
 import re
 
-logging.basicConfig(level=logging.INFO, filename=f'type1_running_{time.time()}.log', filemode='a',
+logging.basicConfig(level=logging.INFO, filename=f'type2_running_{time.time()}.log', filemode='a',
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -88,7 +88,7 @@ def process_jsonl(input_file, output_file, wrong_file, dataset_type):
     failure_rate = (fail_count / total_count) * 100 if total_count else 0
     
     input_file_name = input_file.split("/")[-1]
-    print(f"Processing complete. \nFor jsonl File{input_file_name}: \nFailed to split {fail_count} out of {total_count} responses ({failure_rate:.2f}%).")
+    logger.warning(f"[NOTE]Processing complete. \nFor jsonl File{input_file_name}: \nFailed to split {fail_count} out of {total_count} responses ({failure_rate:.2f}%).")
     
     return fail_count
 
@@ -231,8 +231,8 @@ def main():
     bypass_step1_process = None
     for i in range(20):
         # Step 1: q -> LLM1 -> a
-        print("[INFO] Step1: q -> LLM1 -> a")
-        if bypass_step1_process is not None:
+        logger.info("[INFO] Step1: q -> LLM1 -> a")
+        if bypass_step1_process is None:
             process_llm1 = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
         else:
             process_llm1 = bypass_step1_process
@@ -258,7 +258,7 @@ def main():
         stop_vllm_server(process_llm1)
 
         # Step 2: <q, a> -> LLM2 -> t
-        print("[INFO] Step2: <q, a> -> LLM2 -> t")
+        logger.info("[INFO] Step2: <q, a> -> LLM2 -> t")
         process_llm2 = start_vllm_server(args.llm2_model, args.llm2_name, args.port2, args.gpu)
         step2_file = f"outputs/{args.llm1_name}/tmp_rerun_type2_step2_{os.path.basename(args.input_jsonl)}"
         step2_data = []
@@ -282,7 +282,7 @@ def main():
         stop_vllm_server(process_llm2)
 
         # Step 3: <q, a, t> -> LLM1 -> a'
-        print("[INFO] Step3: <q, a, t> -> LLM1 -> a'")
+        logger.info("[INFO] Step3: <q, a, t> -> LLM1 -> a'")
         process_llm1_step3 = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
         step3_file = f"outputs/{args.llm1_name}/tmp_rerun_type2_step3_{os.path.basename(args.input_jsonl)}"
         step3_data = []
@@ -305,11 +305,11 @@ def main():
         failed_count = process_jsonl(step3_file, args.rerun_jsonl, args.input_jsonl, args.dataset_type)
         
         if failed_count > 0:
-            print(f"[INFO] Rerunning Step1 as still {failed_count} failed to cut.")
+            logger.info(f"[INFO] Rerunning Step1 as still {failed_count} failed to cut.")
             bypass_step1_process = process_llm1_step3
         else:
             stop_vllm_server(process_llm1_step3)
-            print("[INFO] Type2 pipeline complete.")
+            logger.info("[INFO] Type2 pipeline complete.")
             break
         
 

@@ -6,7 +6,7 @@ import time
 import logging
 
 
-logging.basicConfig(level=logging.INFO, filename=f'type1_running_{time.time()}.log', filemode='a',
+logging.basicConfig(level=logging.INFO, filename=f'type2_running_{time.time()}.log', filemode='a',
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -144,7 +144,7 @@ def main():
     args = parser.parse_args()
 
     # Step 1: q -> LLM1 -> a
-    print("[INFO] Step1: q -> LLM1 -> a")
+    logger.info("[INFO] Step1: q -> LLM1 -> a")
     process_llm1 = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
     data_list = list(read_jsonl(args.input_jsonl))
     
@@ -166,7 +166,7 @@ def main():
     stop_vllm_server(process_llm1)
 
     # Step 2: <q, a> -> LLM2 -> t
-    print("[INFO] Step2: <q, a> -> LLM2 -> t")
+    logger.info("[INFO] Step2: <q, a> -> LLM2 -> t")
     process_llm2 = start_vllm_server(args.llm2_model, args.llm2_name, args.port2, args.gpu)
     step2_file = f"outputs/{args.llm1_name}/type2_step2_{os.path.basename(args.input_jsonl)}"
     step2_data = []
@@ -186,7 +186,7 @@ def main():
     stop_vllm_server(process_llm2)
 
     # Step 3: <q, a, t> -> LLM1 -> a'
-    print("[INFO] Step3: <q, a, t> -> LLM1 -> a'")
+    logger.info("[INFO] Step3: <q, a, t> -> LLM1 -> a'")
     process_llm1_step3 = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
     step3_file = f"outputs/{args.llm1_name}/type2_step3_{os.path.basename(args.input_jsonl)}"
     step3_data = []
@@ -204,7 +204,7 @@ def main():
     save_partial_results(step3_file, step3_data, append=True)
     stop_vllm_server(process_llm1_step3)
 
-    print("[INFO] Type2 pipeline complete.")
+    logger.info("[INFO] Type2 pipeline complete.")
 
 if __name__ == "__main__":
     main()

@@ -17,6 +17,7 @@ def process_jsonl(input_file, output_file, dataset_type):
     total_count = 0
 
     processed_data = []
+    wrong_data = []
 
     for record in read_jsonl(input_file):
         total_count += 1
@@ -39,15 +40,31 @@ def process_jsonl(input_file, output_file, dataset_type):
             refined_response = response[cut_position:].strip()
         else:
             refined_response = response.strip()  # Keep the entire response if no keyword is found
+            fail_count += 1
+            wrong_data.append({
+                "idx": idx,
+                "input": question,
+                "output": response
+            })
 
         if not refined_response:
             fail_count += 1
+            wrong_data.append({
+                "idx": idx,
+                "input": question,
+                "output": response
+            })
 
         processed_data.append({
             "idx": idx,
             "input": question,
             "output": refined_response
         })
+        
+    output_file_name = output_file.split("/")[-1]
+    path_to_output = "/".join(output_file.split("/")[:-1])
+    wrong_file = f"rerun_{output_file_name}"
+    write_jsonl(f"{path_to_output}/{wrong_file}", wrong_data)
 
     # Write processed data to a new JSONL file
     write_jsonl(output_file, processed_data)

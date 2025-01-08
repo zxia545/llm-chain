@@ -15,8 +15,8 @@ logger.info("Starting the script...")
 
 def process_jsonl(input_file, output_file, wrong_file, dataset_type):
     cutoff_keywords = {
-        "Infinity-Instruct": ["Final_Answer", "Final Answer"],
-        "MAmmoTH": ["Final_Solution", "Final Solution"],
+        "Infinity-Instruct": ["Final_Answer", "Final Answer", "Final_Solution", "Final Solution"],
+        "MAmmoTH": ["Final_Solution", "Final Solution", "Final_Answer", "Final Answer"],
         "WizardCoder": ["Refactored_Code", "Refactored Code"]
     }
 

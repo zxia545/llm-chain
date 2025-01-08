@@ -6,11 +6,11 @@ import time
 import logging
 import re
 
-logging.basicConfig(level=logging.INFO, filename=f'type2_running_{time.time()}.log', filemode='a',
+logging.basicConfig(level=logging.WARNING, filename=f'rerun_type2_{time.time()}.log', filemode='a',
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-logger.info("Starting the script...")
+logger.warning("Starting the script...")
 
 # This file require user save the input name in the folder in rerun_cut_type2_step3_xxx.jsonl it will 
 
@@ -30,6 +30,8 @@ def process_jsonl(input_file, output_file, wrong_file, dataset_type):
 
     processed_data = []
     wrong_data = []
+    
+    llm_ignore_data = []
 
     for record in read_jsonl(input_file):
         total_count += 1
@@ -37,6 +39,16 @@ def process_jsonl(input_file, output_file, wrong_file, dataset_type):
         question = record.get("q", "")
         response = record.get("response", "")
 
+        
+        if "[LLM Error]" in response:
+            logger.warning(f'Index {idx} has LLM Error - It maybe too long that pass the max token limit')
+            llm_ignore_data.append({
+                "idx": idx,
+                "input": question,
+                "output": response
+            })
+            continue
+        
         # Find the cutoff point
         cut_position = None
         for keyword in keywords:
@@ -75,9 +87,17 @@ def process_jsonl(input_file, output_file, wrong_file, dataset_type):
         
     output_file_name = output_file.split("/")[-1]
     path_to_output = "/".join(output_file.split("/")[:-1])
+    
+    llm_error_file_path = f"{path_to_output}/llm_error_{output_file_name}"
+    if len(llm_ignore_data) > 0:
+        write_jsonl(llm_error_file_path, llm_ignore_data, append=True)
+        logger.warning(f"[INFO] LLM Error data has been saved to {llm_error_file_path}")
+    
+    
     # rewrite the wrong data to a new jsonl file
     if fail_count > 0:
         write_jsonl(f"{wrong_file}", wrong_data)
+        logger.warning(f"[INFO] Failed data has been saved to {wrong_file}")
 
     
     # append the processed data to the output file
@@ -202,13 +222,13 @@ def process_record(api_base, llm_model_name, dataset_type, step, record):
 def refine_list(data_list, jsonl_path):
     # Load existing output JSONL if it exists
     if os.path.exists(jsonl_path):
-        logger.info(f"[INFO] Loading existing results from {jsonl_path}")
+        logger.warning(f"[INFO] Loading existing results from {jsonl_path}")
         existing_results = list(read_jsonl(jsonl_path))
         existing_ids = {record["idx"] for record in existing_results}
         data_list = [record for record in data_list if record.get("idx") not in existing_ids]
-        logger.info(f"[INFO] {len(data_list)} new records will be processed.")
+        logger.warning(f"[INFO] {len(data_list)} new records will be processed.")
     else:
-        logger.info(f"[INFO] No existing results found. Processing all records.")
+        logger.warning(f"[INFO] No existing results found. Processing all records.")
     return data_list
 
 
@@ -231,7 +251,7 @@ def main():
     bypass_step1_process = None
     for i in range(20):
         # Step 1: q -> LLM1 -> a
-        logger.info("[INFO] Step1: q -> LLM1 -> a")
+        logger.warning("[INFO] Step1: q -> LLM1 -> a")
         if bypass_step1_process is None:
             process_llm1 = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
         else:
@@ -258,7 +278,7 @@ def main():
         stop_vllm_server(process_llm1)
 
         # Step 2: <q, a> -> LLM2 -> t
-        logger.info("[INFO] Step2: <q, a> -> LLM2 -> t")
+        logger.warning("[INFO] Step2: <q, a> -> LLM2 -> t")
         process_llm2 = start_vllm_server(args.llm2_model, args.llm2_name, args.port2, args.gpu)
         step2_file = f"outputs/{args.llm1_name}/tmp_rerun_type2_step2_{os.path.basename(args.input_jsonl)}"
         step2_data = []
@@ -282,7 +302,7 @@ def main():
         stop_vllm_server(process_llm2)
 
         # Step 3: <q, a, t> -> LLM1 -> a'
-        logger.info("[INFO] Step3: <q, a, t> -> LLM1 -> a'")
+        logger.warning("[INFO] Step3: <q, a, t> -> LLM1 -> a'")
         process_llm1_step3 = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
         step3_file = f"outputs/{args.llm1_name}/tmp_rerun_type2_step3_{os.path.basename(args.input_jsonl)}"
         step3_data = []
@@ -305,11 +325,11 @@ def main():
         failed_count = process_jsonl(step3_file, args.rerun_jsonl, args.input_jsonl, args.dataset_type)
         
         if failed_count > 0:
-            logger.info(f"[INFO] Rerunning Step1 as still {failed_count} failed to cut.")
+            logger.warning(f"[INFO] Rerunning Step1 as still {failed_count} failed to cut.")
             bypass_step1_process = process_llm1_step3
         else:
             stop_vllm_server(process_llm1_step3)
-            logger.info("[INFO] Type2 pipeline complete.")
+            logger.warning("[INFO] Type2 pipeline complete.")
             break
         
 

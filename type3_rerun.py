@@ -31,6 +31,8 @@ def process_jsonl(input_file, output_file, wrong_file, dataset_type):
     wrong_data = []
     
     llm_ignore_data = []
+    
+    raw_data = []
 
     for record in read_jsonl(input_file):
         total_count += 1
@@ -66,6 +68,8 @@ def process_jsonl(input_file, output_file, wrong_file, dataset_type):
                 "input": question,
                 "output": refined_response
             })
+            raw_data.append(record)
+            
         else:
             refined_response = response.strip()  # Keep the entire response if no keyword is found
             fail_count += 1
@@ -78,6 +82,10 @@ def process_jsonl(input_file, output_file, wrong_file, dataset_type):
         
     output_file_name = output_file.split("/")[-1]
     path_to_output = "/".join(output_file.split("/")[:-1])
+    
+    raw_output_name = output_file_name.replace("cut", "cut_raw")
+    raw_output_file = f"{path_to_output}/{raw_output_name}"
+    
     
     llm_error_file_path = f"{path_to_output}/llm_error_{output_file_name}"
     if len(llm_ignore_data) > 0:
@@ -94,6 +102,8 @@ def process_jsonl(input_file, output_file, wrong_file, dataset_type):
     # append the processed data to the output file
     # Write processed data to a new JSONL file
     write_jsonl(output_file, processed_data, append=True)
+    
+    write_jsonl(raw_output_file, raw_data, append=True)
 
     # Print failure statistics
     failure_rate = (fail_count / total_count) * 100 if total_count else 0

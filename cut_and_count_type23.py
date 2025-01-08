@@ -52,13 +52,13 @@ def process_jsonl(input_file, output_file, dataset_type):
                 "output": response
             })
 
-        if not refined_response:
-            fail_count += 1
-            wrong_data.append({
-                "idx": idx,
-                "input": question,
-                "output": response
-            })
+        # if not refined_response:
+        #     fail_count += 1
+        #     wrong_data.append({
+        #         "idx": idx,
+        #         "input": question,
+        #         "output": response
+        #     })
 
         
     output_file_name = output_file.split("/")[-1]

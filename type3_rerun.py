@@ -208,9 +208,8 @@ def main():
         step1_data = []
         api_base_llm2 = f"http://localhost:{args.port2}"
         
-
-        if os.path.exists(args.step1_file):
-            os.remove(args.step1_file)
+        if os.path.exists(step1_file):
+            os.remove(step1_file)
 
         with ThreadPoolExecutor(max_workers=args.threads) as executor:
             futures = [executor.submit(process_record, api_base_llm2, args.llm2_name, args.dataset_type, 1, record) for record in data_list]
@@ -230,8 +229,8 @@ def main():
         step1_data_reloaded = list(read_jsonl(step1_file))
         api_base_llm1 = f"http://localhost:{args.port1}"
         
-        if os.path.exists(args.step2_file):
-            os.remove(args.step2_file)
+        if os.path.exists(step2_file):
+            os.remove(step2_file)
         
         with ThreadPoolExecutor(max_workers=args.threads) as executor:
             futures = [executor.submit(process_record, api_base_llm1, args.llm1_name, args.dataset_type, 2, record) for record in step1_data_reloaded]

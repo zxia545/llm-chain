@@ -46,7 +46,10 @@ def calculate_averages(data):
         for task in tasks:
             if task in data["results"]:
                 task_data = data["results"][task]
-                if "acc_norm,none" in task_data:
+                if task == "leaderboard_ifeval":
+                    acc_keys = [key for key in task_data.keys() if "acc,none" in key]
+                    scores.extend([task_data[key] for key in acc_keys])
+                elif "acc_norm,none" in task_data:
                     scores.append(task_data["acc_norm,none"])
                 elif "exact_match,none" in task_data:
                     scores.append(task_data["exact_match,none"])

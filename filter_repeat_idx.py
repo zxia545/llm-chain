@@ -16,6 +16,11 @@ def process_jsonl(input_file):
         idx_set.add(idx)
         processed_data.append(record)
         
+
+    
+    # sort by idx
+    processed_data = sorted(processed_data, key=lambda x: x["idx"])
+    
     write_jsonl(input_file, processed_data, append=False)
     
     print(f"Processed {len(processed_data)} records from {input_file}.")

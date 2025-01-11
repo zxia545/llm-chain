@@ -1,58 +1,71 @@
+import os
 import json
 import pandas as pd
 
-# Load the JSON file
-json_file = "results_2025-01-10T12-32-23.787829.json"
-with open(json_file, "r") as f:
-    data = json.load(f)
+# Function to process each folder
+def process_folders(base_path):
+    results = []
 
-results = data["results"]
-group_subtasks = data["group_subtasks"]
+    for folder_name in os.listdir(base_path):
+        folder_path = os.path.join(base_path, folder_name)
+        if os.path.isdir(folder_path):
+            for file_name in os.listdir(folder_path):
+                if file_name.endswith('.json'):
+                    file_path = os.path.join(folder_path, file_name)
+                    with open(file_path, 'r') as f:
+                        data = json.load(f)
 
-# Define task mapping
-tasks = {
-    "ARC": {"key": "arc_challenge", "metric": "acc_norm,none"},
-    "HellaSwag": {"key": "hellaswag", "metric": "acc_norm,none"},
-    "TruthfulQA": {"key": "truthfulqa_mc2", "metric": "acc,none"},
-    "Winogrande": {"key": "winogrande", "metric": "acc,none"},
-    "GSM8k": {"key": "gsm8k", "metric": "exact_match,strict-match"},
-    "MMLU": {
-        "key": "mmlu",
-        "subgroups": [
-            "mmlu_humanities",
-            "mmlu_social_sciences",
-            "mmlu_other",
-            "mmlu_stem",
-        ],
-    },
-}
+                    # Process the JSON data
+                    averages = calculate_averages(data)
+                    averages["Folder"] = folder_name
+                    results.append(averages)
 
-# Helper function to calculate averages
-def calculate_average(task_key, metric, subgroups=None):
-    if subgroups:
+    # Convert results to DataFrame and save to Excel
+    df = pd.DataFrame(results)
+    df = df[["Folder", "ARC", "HellaSwag", "TruthfulQA", "Winogrande", "GSM8k", "MMLU", "Avg"]]
+    output_path = os.path.join(base_path, "result.xlsx")
+    df.to_excel(output_path, index=False)
+    print(f"Results saved to {output_path}")
+
+# Function to calculate averages for groups
+def calculate_averages(data):
+    group_definitions = {
+        "ARC": {"key": "arc_challenge", "metric": "acc_norm,none"},
+        "HellaSwag": {"key": "hellaswag", "metric": "acc_norm,none"},
+        "TruthfulQA": {"key": "truthfulqa_mc2", "metric": "acc,none"},
+        "Winogrande": {"key": "winogrande", "metric": "acc,none"},
+        "GSM8k": {"key": "gsm8k", "metric": "exact_match,strict-match"},
+        "MMLU": {
+            "key": "mmlu",
+            "subgroups": [
+                "mmlu_humanities",
+                "mmlu_social_sciences",
+                "mmlu_other",
+                "mmlu_stem"
+            ]
+        }
+    }
+
+    group_averages = {}
+    total_average = []
+
+    for group_name, task_info in group_definitions.items():
         scores = []
-        for subgroup in subgroups:
-            subtasks = group_subtasks.get(subgroup, [])
-            for subtask in subtasks:
-                scores.append(results[subtask].get(metric, 0))
-        return sum(scores) / len(scores) if scores else None
-    else:
-        return results[task_key].get(metric, None)
+        if "subgroups" in task_info:
+            for subgroup in task_info["subgroups"]:
+                if subgroup in data["results"]:
+                    scores.append(data["results"][subgroup].get("acc,none", 0))
+        else:
+            if task_info["key"] in data["results"]:
+                scores.append(data["results"][task_info["key"]].get(task_info["metric"], 0))
+        
+        group_avg = sum(scores) / len(scores) if scores else 0
+        group_averages[group_name] = group_avg * 100
+        total_average.extend(scores)
 
-# Process each task
-output_data = []
-for task_name, task_info in tasks.items():
-    if "subgroups" in task_info:
-        avg_score = calculate_average(
-            task_info["key"], "acc,none", subgroups=task_info["subgroups"]
-        )
-    else:
-        avg_score = calculate_average(task_info["key"], task_info["metric"])
-    output_data.append({"Task": task_name, "Average Score": avg_score})
+    group_averages["Avg"] = (sum(total_average) / len(total_average) * 100) if total_average else 0
+    return group_averages
 
-# Create a DataFrame and save to Excel
-df = pd.DataFrame(output_data)
-output_file = "leaderboard_results.xlsx"
-df.to_excel(output_file, index=False)
-
-print(f"Results saved to {output_file}")
+# Define the base path for your folders
+base_folder = "/path/to/current/folder"
+process_folders(base_folder)

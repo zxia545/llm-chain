@@ -7,6 +7,7 @@ from typing import Dict, Any
 import subprocess
 from openai import OpenAI
 import json
+import os
 
 def read_jsonl(file_path):
     with open(file_path, 'r', encoding='utf-8') as f:
@@ -20,6 +21,22 @@ def write_jsonl(file_path, data_list, append=False):
     If append is True, appends the data to the file instead of overwriting it.
     """
     mode = 'a' if append else 'w'
+    
+    # check if file exists
+    if not os.path.exists(file_path):
+        # check the parent directory and create if it doesn't exist
+        parent_dir = os.path.dirname(file_path)
+        if not os.path.exists(parent_dir):
+            os.makedirs(parent_dir)
+        
+        # create the file if it doesn't exist
+        with open(file_path, 'w', encoding='utf-8') as f:
+            pass
+        
+        # update mode to write
+        mode = 'w'
+
+
     with open(file_path, mode, encoding='utf-8') as f:
         for item in data_list:
             f.write(json.dumps(item, ensure_ascii=False) + '\n')

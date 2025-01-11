@@ -123,7 +123,7 @@ def construct_messages(dataset_type, step, question=None, std_answer=None, doubt
         if step == 1:
             return [
                 {"role": "system", "content": "You are an AI assistant. You will read the question and a correct and high-quality answer. If there is anything in the answer you find unclear, incomplete, or confusing, ask specific questions to better understand those parts.\n"},
-                {"role": "user", "content": f"Question: {question}\nHere is the answer:\n{std_answer}\n\nPlease list any questions you have about details or reasoning you do not fully understand.\nIf you have no questions, please reply with 'No doubts'."}
+                {"role": "user", "content": f"Question: {question}\nHere is the answer:\n{std_answer}\n\nPlease list any questions you have about details or reasoning you do not fully understand.\nIf you have no questions, then in your reply's beginning use the sentence 'I don't have any questions in this answer.'"}
             ]
         elif step == 2:
             return [
@@ -134,7 +134,7 @@ def construct_messages(dataset_type, step, question=None, std_answer=None, doubt
         if step == 1:
             return [
                 {"role": "system", "content": "You are an AI assistant. You will read a correct and high-quality solution to the following math problem. If any step in the solution is unclear, lacks justification, or appears incomplete, ask specific questions to clarify or better understand those parts."},
-                {"role": "user", "content": f"Math Problem: {question}\nHere is the solution (correct and high-quality):\n{std_answer}\n\nPlease list your questions about the reasoning steps or details you do not fully understand.\nIf you have no questions, please reply with 'No doubts'."}
+                {"role": "user", "content": f"Math Problem: {question}\nHere is the solution (correct and high-quality):\n{std_answer}\n\nPlease list your questions about the reasoning steps or details you do not fully understand.\nIf you have no questions, then in your reply's beginning use the sentence 'I don't have any questions in this answer.'"}
             ]
         elif step == 2:
             return [
@@ -145,7 +145,7 @@ def construct_messages(dataset_type, step, question=None, std_answer=None, doubt
         if step == 1:
             return [
                 {"role": "system", "content": "You are an AI assistant. You will read a correct and high-quality code solution to the following programming problem. If there is any part of the solution or its reasoning you find unclear or confusing, ask specific questions to clarify those parts."},
-                {"role": "user", "content": f"Programming Problem: {question}\nHere is the code solution (correct and high-quality):\n{std_answer}\n\nPlease list your questions about any unclear logic, implementation detail, or part of the solution you do not fully understand.\nIf you have no questions, please reply with 'No doubts'."}
+                {"role": "user", "content": f"Programming Problem: {question}\nHere is the code solution (correct and high-quality):\n{std_answer}\n\nPlease list your questions about any unclear logic, implementation detail, or part of the solution you do not fully understand.\nIf you have no questions, then in your reply's beginning use the sentence 'I don't have any questions in this answer.'"}
             ]
         elif step == 2:
             return [

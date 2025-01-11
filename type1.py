@@ -6,7 +6,7 @@ import logging
 import time
 
 # Configure logger
-logging.basicConfig(level=logging.INFO, filename=f'type1_running_{time.time()}.log', filemode='a',
+logging.basicConfig(level=logging.INFO, filename=f'type1_running_{time.strftime("%d_%H_%M_%S")}.log', filemode='a',
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -60,7 +60,7 @@ def main():
     data_list = list(read_jsonl(args.input_jsonl))
     model_dir = os.path.join("outputs", args.model_name)
     os.makedirs(model_dir, exist_ok=True)
-    output_file = os.path.join(model_dir, os.path.basename(args.input_jsonl))
+    output_file = os.path.join(model_dir, f'type1_{os.path.basename(args.input_jsonl)}')
 
     # Load existing output JSONL if it exists
     if os.path.exists(output_file):

@@ -319,7 +319,7 @@ def main():
         save_partial_results(step2_file, step2_data, append=True)
         stop_vllm_server(process_llm1)
         
-        failed_count = process_jsonl(step2_file, args.rerun_jsonl, args.wrong_jsonl, args.dataset_type)
+        failed_count = process_jsonl(step2_file, args.output_jsonl, args.wrong_jsonl, args.dataset_type)
         if failed_count > 0:
             logger.warning(f"[INFO] Rerunning Step1 as still {failed_count} failed to cut.")
         else:

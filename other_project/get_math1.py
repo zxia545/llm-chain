@@ -2,7 +2,7 @@ import os
 import json
 import pandas as pd
 
-# Function to process JSON files in the folder and combine results into one Excel file
+# Function to process JSON files in the folder and combine results into a single row for each file
 def process_json_files(base_path):
     combined_results = []
 
@@ -12,9 +12,10 @@ def process_json_files(base_path):
             with open(file_path, 'r') as f:
                 data = json.load(f)
 
-            # Extract key-value pairs and add the file name as a column
-            for key, value in data.items():
-                combined_results.append({"File Name": file_name, "Key": key, "Value": value})
+            # Create a row with the file name and all key-value pairs
+            row = {"File Name": file_name}
+            row.update(data)  # Add all key-value pairs from JSON
+            combined_results.append(row)
 
     # Convert combined results to a DataFrame
     df = pd.DataFrame(combined_results)

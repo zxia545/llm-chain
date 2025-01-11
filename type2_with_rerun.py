@@ -131,7 +131,7 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
         elif step == 2:
             return [
                 {"role": "system", "content": "You are an AI assistant. You will read the question and an answer provided by another AI assistant. If there is anything in the answer you find unclear, incomplete, or confusing, ask specific questions to better understand those parts."},
-                {"role": "user", "content": f"Question: {question}\nHere is the answer:\n{answer}\n\nPlease list any questions you have about details or reasoning you do not fully understand.\nIf you have no doubts, please reply with 'No doubts'."}
+                {"role": "user", "content": f"Question: {question}\nHere is the answer:\n{answer}\n\nPlease list any questions you have about details or reasoning you do not fully understand.\nIf you have no questions, please reply with 'No doubts'."}
             ]
         elif step == 3:
             return [
@@ -150,13 +150,13 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
                 ]
             else:
                 return [
-                    {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations. For every question, break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning.\nIf you have no doubts, please reply with 'No doubts'."},
+                    {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations. For every question, break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."},
                     {"role": "user", "content": question}
                 ]
         elif step == 2:
             return [
                 {"role": "system", "content": "You are an AI assistant. You will read the math problem and a solution provided by another AI assistant. If any step in the solution is unclear, lacks justification, or appears incomplete, ask specific questions to clarify or better understand those parts."},
-                {"role": "user", "content": f"Math Problem: {question}\nHere is the solution:\n{answer}\n\nPlease list your questions about the reasoning steps or details you do not fully understand.\nIf you have no doubts, please reply with 'No doubts'."}
+                {"role": "user", "content": f"Math Problem: {question}\nHere is the solution:\n{answer}\n\nPlease list your questions about the reasoning steps or details you do not fully understand.\nIf you have no questions, please reply with 'No doubts'."}
             ]
         elif step == 3:
             question_lower = question.lower()
@@ -183,7 +183,7 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
         elif step == 2:
             return [
                 {"role": "system", "content": "You are an AI assistant. You will read the programming problem and a proposed code solution. If there is any part of the solution or its reasoning you find unclear or confusing, ask specific questions to clarify those parts."},
-                {"role": "user", "content": f"Programming Problem: {question}\nHere is the code solution:\n{answer}\n\nPlease list your questions about any unclear logic, implementation detail, or part of the solution you do not fully understand.\nIf you have no doubts, please reply with 'No doubts'."}
+                {"role": "user", "content": f"Programming Problem: {question}\nHere is the code solution:\n{answer}\n\nPlease list your questions about any unclear logic, implementation detail, or part of the solution you do not fully understand.\nIf you have no questions, please reply with 'No doubts'."}
             ]
         elif step == 3:
             return [
@@ -251,11 +251,13 @@ def main():
     parser.add_argument("--bypass_init", type=bool, default=False, help="Bypass the initial process")
     args = parser.parse_args()
 
+    # check does output file exist
+    is_output_file_exists = os.path.exists(args.output_jsonl)
     """
     !!! This is the first time running the script !!! 
     """
     ###############################################################################################################################################################
-    if not args.bypass_init:
+    if not args.bypass_init and not is_output_file_exists:
         # Step 1: q -> LLM1 -> a
         logger.warning("[SECTION1] - Start the init data processing and generate the output jsonl file")
         logger.warning("[INFO] Step1: q -> LLM1 -> a")
@@ -323,6 +325,10 @@ def main():
         process_jsonl(step3_file, args.output_jsonl, args.wrong_jsonl, args.dataset_type)
     else:
         logger.warning(f"[SECTION1] - Bypass the initial data generation, directly load {args.wrong_jsonl} to rerun the process")
+        if not is_output_file_exists:
+            logger.warning(f"[WARNING] The output file {args.output_jsonl} does not exist, please run the script without bypass_init to generate the output file")
+        else:
+            logger.warning(f"[GOOD] The output file {args.output_jsonl} already exist. Can run the script without bypass_init to regenerate the output file")
     ###############################################################################################################################################################
     """
     !!! This is rerun the output section !!!

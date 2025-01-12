@@ -47,20 +47,25 @@ def main():
                         help="Type of dataset being processed.")
     parser.add_argument("--model", type=str, required=True, help="Path or name of the model for vLLM.")
     parser.add_argument("--model_name", type=str, required=True, help="Name of the model for vLLM.")
+    parser.add_argument("--output_folder_path", type=str, required=True, help="Folder name for the output.")
     parser.add_argument("--gpu", type=int, default=1, help="Number of GPUs for tensor parallel.")
     parser.add_argument("--port", type=int, default=8000, help="Port for the vLLM server.")
     parser.add_argument("--input_jsonl", type=str, required=True, help="Path to the input JSONL file.")
     parser.add_argument("--threads", type=int, default=8, help="Number of threads for concurrent processing.")
     args = parser.parse_args()
-
+    
+    # check if output folder exist or not
+    if not os.path.exists(args.output_folder_path):
+        os.makedirs(args.output_folder_path)
+    output_folder_path = args.output_folder_path
+    
     # Step 1: Start vLLM server for the chosen model
     process = start_vllm_server(args.model, args.model_name, args.port, args.gpu)
 
     # Step 2: Prepare reading/writing
     data_list = list(read_jsonl(args.input_jsonl))
-    model_dir = os.path.join("outputs", args.model_name)
-    os.makedirs(model_dir, exist_ok=True)
-    output_file = os.path.join(model_dir, f'type1_{os.path.basename(args.input_jsonl)}')
+
+    output_file = os.path.join(output_folder_path, f'type1_{os.path.basename(args.input_jsonl)}')
 
     # Load existing output JSONL if it exists
     if os.path.exists(output_file):

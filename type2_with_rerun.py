@@ -131,7 +131,7 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
         elif step == 2:
             return [
                 {"role": "system", "content": "You are an AI assistant. You will read the question and an answer provided by another AI assistant. If there is anything in the answer you find unclear, incomplete, or confusing, ask specific questions to better understand those parts."},
-                {"role": "user", "content": f"Question: {question}\nHere is the answer:\n{answer}\n\nPlease list any questions you have about details or reasoning you do not fully understand.\nIf you have no questions, then in your reply's beginning use the sentence 'I don't have any questions in this answer.'"}
+                {"role": "user", "content": f"Question: {question}\nHere is the answer:\n{answer}\n\nPlease list any questions you have about details or reasoning you do not fully understand."}
             ]
         elif step == 3:
             return [
@@ -156,7 +156,7 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
         elif step == 2:
             return [
                 {"role": "system", "content": "You are an AI assistant. You will read the math problem and a solution provided by another AI assistant. If any step in the solution is unclear, lacks justification, or appears incomplete, ask specific questions to clarify or better understand those parts."},
-                {"role": "user", "content": f"Math Problem: {question}\nHere is the solution:\n{answer}\n\nPlease list your questions about the reasoning steps or details you do not fully understand.\nIf you have no questions, then in your reply's beginning use the sentence 'I don't have any questions in this answer.'"}
+                {"role": "user", "content": f"Math Problem: {question}\nHere is the solution:\n{answer}\n\nPlease list your questions about the reasoning steps or details you do not fully understand."}
             ]
         elif step == 3:
             question_lower = question.lower()
@@ -183,7 +183,7 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
         elif step == 2:
             return [
                 {"role": "system", "content": "You are an AI assistant. You will read the programming problem and a proposed code solution. If there is any part of the solution or its reasoning you find unclear or confusing, ask specific questions to clarify those parts."},
-                {"role": "user", "content": f"Programming Problem: {question}\nHere is the code solution:\n{answer}\n\nPlease list your questions about any unclear logic, implementation detail, or part of the solution you do not fully understand.\nIf you have no questions, then in your reply's beginning use the sentence 'I don't have any questions in this answer.'"}
+                {"role": "user", "content": f"Programming Problem: {question}\nHere is the code solution:\n{answer}\n\nPlease list your questions about any unclear logic, implementation detail, or part of the solution you do not fully understand."}
             ]
         elif step == 3:
             return [
@@ -239,6 +239,7 @@ def main():
     parser.add_argument("--dataset_type", type=str, required=True, choices=["Infinity-Instruct", "MAmmoTH", "WizardCoder"], help="Type of dataset being processed.")
     parser.add_argument("--input_jsonl", type=str, required=True, help="Original Q input JSONL.")
     parser.add_argument("--output_jsonl", type=str, required=True, help="Final output will be like 'cut_type2_step3_xxx.jsonl'")
+    parser.add_argument("--output_folder_path", type=str, required=True, help="Folder name for the output.")
     parser.add_argument("--wrong_jsonl", type=str, required=True, help="Wrong output will be like 'rerun_cut_type2_step3_xxx.jsonl'")
     parser.add_argument("--llm1_model", type=str, required=True, help="Model path for LLM1.")
     parser.add_argument("--llm2_model", type=str, required=True, help="Model path for LLM2.")
@@ -251,6 +252,18 @@ def main():
     parser.add_argument("--bypass_init", type=bool, default=False, help="Bypass the initial process")
     args = parser.parse_args()
 
+    output_folder_path = args.output_folder_path
+    
+    if not os.path.exists(output_folder_path):
+        os.makedirs(output_folder_path)
+    
+    # check if output jsonl is a path to jsonl or just the name if just the name then append the output_folder_path
+    if not args.output_jsonl.startswith("/"):
+        args.output_jsonl = f"{args.output_folder_path}/{args.output_jsonl}"
+        
+    if not args.wrong_jsonl.startswith("/"):
+        args.wrong_jsonl = f"{args.output_folder_path}/{args.wrong_jsonl}"
+    
     # check does output file exist
     is_output_file_exists = os.path.exists(args.output_jsonl)
     """
@@ -264,7 +277,7 @@ def main():
         process_llm1 = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
         data_list = list(read_jsonl(args.input_jsonl))
         
-        step1_file = f"outputs/{args.llm1_name}/type2_step1_{os.path.basename(args.input_jsonl)}"
+        step1_file = f"{output_folder_path}/type2_step1_{os.path.basename(args.input_jsonl)}"
         step1_data = []
         api_base_llm1 = f"http://localhost:{args.port1}"
         
@@ -284,7 +297,7 @@ def main():
         # Step 2: <q, a> -> LLM2 -> t
         logger.warning("[INFO] Step2: <q, a> -> LLM2 -> t")
         process_llm2 = start_vllm_server(args.llm2_model, args.llm2_name, args.port2, args.gpu)
-        step2_file = f"outputs/{args.llm1_name}/type2_step2_{os.path.basename(args.input_jsonl)}"
+        step2_file = f"{output_folder_path}/type2_step2_{os.path.basename(args.input_jsonl)}"
         step2_data = []
         step1_data_reloaded = list(read_jsonl(step1_file))
         api_base_llm2 = f"http://localhost:{args.port2}"
@@ -304,7 +317,7 @@ def main():
         # Step 3: <q, a, t> -> LLM1 -> a'
         logger.warning("[INFO] Step3: <q, a, t> -> LLM1 -> a'")
         process_llm1_step3 = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
-        step3_file = f"outputs/{args.llm1_name}/type2_step3_{os.path.basename(args.input_jsonl)}"
+        step3_file = f"{output_folder_path}/type2_step3_{os.path.basename(args.input_jsonl)}"
         step3_data = []
         step2_data_reloaded = list(read_jsonl(step2_file))
 
@@ -348,7 +361,7 @@ def main():
         # NOTE: we load the rerun input jsonl
         data_list = list(read_jsonl(rerun_input_jsonl))
         
-        step1_file = f"outputs/{args.llm1_name}/tmp_rerun_type2_step1_{os.path.basename(args.input_jsonl)}"
+        step1_file = f"{output_folder_path}/tmp_rerun_type2_step1_{os.path.basename(args.input_jsonl)}"
         step1_data = []
         api_base_llm1 = f"http://localhost:{args.port1}"
         
@@ -369,7 +382,7 @@ def main():
         # Step 2: <q, a> -> LLM2 -> t
         logger.warning("[INFO] Step2: <q, a> -> LLM2 -> t")
         process_llm2 = start_vllm_server(args.llm2_model, args.llm2_name, args.port2, args.gpu)
-        step2_file = f"outputs/{args.llm1_name}/tmp_rerun_type2_step2_{os.path.basename(args.input_jsonl)}"
+        step2_file = f"{output_folder_path}/tmp_rerun_type2_step2_{os.path.basename(args.input_jsonl)}"
         step2_data = []
         
         step1_data_reloaded = list(read_jsonl(step1_file))
@@ -393,7 +406,7 @@ def main():
         # Step 3: <q, a, t> -> LLM1 -> a'
         logger.warning("[INFO] Step3: <q, a, t> -> LLM1 -> a'")
         process_llm1_step3 = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
-        step3_file = f"outputs/{args.llm1_name}/tmp_rerun_type2_step3_{os.path.basename(args.input_jsonl)}"
+        step3_file = f"{output_folder_path}/tmp_rerun_type2_step3_{os.path.basename(args.input_jsonl)}"
         step3_data = []
         step2_data_reloaded = list(read_jsonl(step2_file))
 

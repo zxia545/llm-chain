@@ -6,7 +6,7 @@ import logging
 import time
 import re
 
-logging.basicConfig(level=logging.WARNING, filename=f'type3_with_self_rerun_{time.strftime("%d_%H_%M_%S")}.log', filemode='a',
+logging.basicConfig(level=logging.WARNING, filename=f'type4_with_self_rerun_{time.strftime("%d_%H_%M_%S")}.log', filemode='a',
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -122,35 +122,35 @@ def construct_messages(dataset_type, step, question=None, std_answer=None, doubt
     if dataset_type == "Infinity-Instruct":
         if step == 1:
             return [
-                {"role": "system", "content": "You are an AI assistant. You will read the question and a correct and high-quality answer. If there is anything in the answer you find unclear, incomplete, or confusing, ask specific questions to better understand those parts.\n"},
+                {"role": "system", "content": "You are an AI assistant. You will read the question and a correct answer. If there is anything in the answer you find unclear, incomplete, or confusing, ask specific questions to better understand those parts.\n"},
                 {"role": "user", "content": f"Question: {question}\nHere is the answer:\n{std_answer}\n\nPlease list any questions you have about details or reasoning you do not fully understand."}
             ]
         elif step == 2:
             return [
-                {"role": "system", "content": "You are an AI assistant. You are tasked with rewriting a correct and high-quality answer based on the questions provided. Refine or expand the original answer to address these questions clearly and effectively."},
-                {"role": "user", "content": f"Question: {question}\nPrevious Answer (correct and high-quality): {std_answer}\nFeedback: {doubts}\n\nStructure your response in two sections: 'Addressing_Feedback:' followed by detailed responses to the feedback, and 'Final_Answer:' with the updated and improved answer.\nPlease rewrite the answer accordingly:"}
+                {"role": "system", "content": "You are an AI assistant. You are tasked with rewriting a correct answer based on the questions provided. Refine or expand the original answer to address these questions clearly and effectively."},
+                {"role": "user", "content": f"Question: {question}\nPrevious Answer (correct): {std_answer}\nFeedback: {doubts}\n\nStructure your response in two sections: 'Addressing_Feedback:' followed by detailed responses to the feedback, and 'Final_Answer:' with the updated and improved answer.\nPlease rewrite the answer accordingly:"}
             ]
     elif dataset_type == "MAmmoTH":
         if step == 1:
             return [
-                {"role": "system", "content": "You are an AI assistant. You will read a correct and high-quality solution to the following math problem. If any step in the solution is unclear, lacks justification, or appears incomplete, ask specific questions to clarify or better understand those parts."},
-                {"role": "user", "content": f"Math Problem: {question}\nHere is the solution (correct and high-quality):\n{std_answer}\n\nPlease list your questions about the reasoning steps or details you do not fully understand."}
+                {"role": "system", "content": "You are an AI assistant. You will read a correct solution to the following math problem. If any step in the solution is unclear, lacks justification, or appears incomplete, ask specific questions to clarify or better understand those parts."},
+                {"role": "user", "content": f"Math Problem: {question}\nHere is the solution:\n{std_answer}\n\nPlease list your questions about the reasoning steps or details you do not fully understand."}
             ]
         elif step == 2:
             return [
-                {"role": "system", "content": "You are a mathematician and educator. You are tasked with rewriting a correct and high-quality math solution based on the questions provided. Refine and enhance the original solution to address these questions, ensuring accuracy, logical reasoning, and clear explanations."},
-                {"role": "user", "content": f"Math Problem: {question}\nPrevious Solution (correct and high-quality): {std_answer}\nFeedback: {doubts}\n\nStructure your response into two sections: 'Addressing_Feedback:' followed by responses to the feedback and 'Final_Solution:' with the refined and accurate solution.\nPlease rewrite the solution accordingly:"}
+                {"role": "system", "content": "You are a mathematician and educator. You are tasked with rewriting a correct math solution based on the questions provided. Refine and enhance the original solution to address these questions, ensuring accuracy, logical reasoning, and clear explanations."},
+                {"role": "user", "content": f"Math Problem: {question}\nPrevious Solution (correct): {std_answer}\nFeedback: {doubts}\n\nStructure your response into two sections: 'Addressing_Feedback:' followed by responses to the feedback and 'Final_Solution:' with the refined and accurate solution.\nPlease rewrite the solution accordingly:"}
             ]
     elif dataset_type == "WizardCoder":
         if step == 1:
             return [
-                {"role": "system", "content": "You are an AI assistant. You will read a correct and high-quality code solution to the following programming problem. If there is any part of the solution or its reasoning you find unclear or confusing, ask specific questions to clarify those parts."},
-                {"role": "user", "content": f"Programming Problem: {question}\nHere is the code solution (correct and high-quality):\n{std_answer}\n\nPlease list your questions about any unclear logic, implementation detail, or part of the solution you do not fully understand."}
+                {"role": "system", "content": "You are an AI assistant. You will read a correct code solution to the following programming problem. If there is any part of the solution or its reasoning you find unclear or confusing, ask specific questions to clarify those parts."},
+                {"role": "user", "content": f"Programming Problem: {question}\nHere is the code solution:\n{std_answer}\n\nPlease list your questions about any unclear logic, implementation detail, or part of the solution you do not fully understand."}
             ]
         elif step == 2:
             return [
-                {"role": "system", "content": "You are an expert programmer. You are tasked with rewriting a correct and high-quality code solution based on the questions provided. Refactor, clarify, or enhance the code to address these questions, ensuring it is correct, efficient, readable, and adheres to best practices."},
-                {"role": "user", "content": f"Programming Problem: {question}\nPrevious Code Solution (correct and high-quality): {std_answer}\nFeedback: {doubts}\n\n Structure your response into two sections: 'Addressing_Feedback:' with detailed responses to the feedback, and 'Refactored_Code:' with the final improved code solution.\nPlease rewrite the code solution accordingly:"}
+                {"role": "system", "content": "You are an expert programmer. You are tasked with rewriting a correct code solution based on the questions provided. Refactor, clarify, or enhance the code to address these questions, ensuring it is correct, efficient, readable, and adheres to best practices."},
+                {"role": "user", "content": f"Programming Problem: {question}\nPrevious Code Solution (correct): {std_answer}\nFeedback: {doubts}\n\n Structure your response into two sections: 'Addressing_Feedback:' with detailed responses to the feedback, and 'Refactored_Code:' with the final improved code solution.\nPlease rewrite the code solution accordingly:"}
             ]
     else:
         raise ValueError(f"Unsupported dataset type: {dataset_type}")
@@ -237,7 +237,7 @@ def main():
         logger.warning("[INFO] Step1: <q, a_std> -> LLM2 -> t")
         process_llm2 = start_vllm_server(args.llm2_model, args.llm2_name, args.port2, args.gpu)
         data_list = list(read_jsonl(args.input_jsonl))
-        step1_file = f"{output_folder_path}/type3_step1_{os.path.basename(args.input_jsonl)}"
+        step1_file = f"{output_folder_path}/type4_step1_{os.path.basename(args.input_jsonl)}"
         step1_data = []
         api_base_llm2 = f"http://localhost:{args.port2}"
         
@@ -257,7 +257,7 @@ def main():
         # Step 2: <q, a_std, t> -> LLM1 -> a'
         logger.warning("[INFO] Step2: <q, a_std, t> -> LLM1 -> a'")
         process_llm1 = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
-        step2_file = f"{output_folder_path}/type3_step2_{os.path.basename(args.input_jsonl)}"
+        step2_file = f"{output_folder_path}/type4_step2_{os.path.basename(args.input_jsonl)}"
         step2_data = []
         step1_data_reloaded = list(read_jsonl(step1_file))
         api_base_llm1 = f"http://localhost:{args.port1}"
@@ -296,7 +296,7 @@ def main():
         logger.warning("[INFO] Step1: <q, a_std> -> LLM2 -> t")
         process_llm2 = start_vllm_server(args.llm2_model, args.llm2_name, args.port2, args.gpu)
         data_list = list(read_jsonl(rerun_input_jsonl))
-        step1_file = f"{output_folder_path}/tmp_rerun_type3_step1_{os.path.basename(args.input_jsonl)}"
+        step1_file = f"{output_folder_path}/tmp_rerun_type4_step1_{os.path.basename(args.input_jsonl)}"
         step1_data = []
         api_base_llm2 = f"http://localhost:{args.port2}"
         
@@ -316,7 +316,7 @@ def main():
         # Step 2: <q, a_std, t> -> LLM1 -> a'
         logger.warning("[INFO] Step2: <q, a_std, t> -> LLM1 -> a'")
         process_llm1 = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
-        step2_file = f"{output_folder_path}/tmp_rerun_type3_step2_{os.path.basename(args.input_jsonl)}"
+        step2_file = f"{output_folder_path}/tmp_rerun_type4_step2_{os.path.basename(args.input_jsonl)}"
         step2_data = []
         step1_data_reloaded = list(read_jsonl(step1_file))
         api_base_llm1 = f"http://localhost:{args.port1}"
@@ -338,7 +338,7 @@ def main():
         if failed_count > 0:
             logger.warning(f"[INFO] Rerunning Step1 as still {failed_count} failed to cut.")
         else:
-            logger.warning("[INFO] Type3 pipeline complete.")
+            logger.warning("[INFO] Type4 pipeline complete.")
             break
 
 if __name__ == "__main__":

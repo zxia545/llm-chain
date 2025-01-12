@@ -21,6 +21,8 @@ def process_jsonl(input_file, output_file, wrong_file, dataset_type):
         "WizardCoder": ["Refactored_Code", "Refactored Code"]
     }
 
+    cutoff_front_words = ["Addressing_Feedback", "Addressing Feedback"]
+
     if dataset_type not in cutoff_keywords:
         raise ValueError(f"Unsupported dataset type: {dataset_type}")
 
@@ -30,9 +32,7 @@ def process_jsonl(input_file, output_file, wrong_file, dataset_type):
 
     processed_data = []
     wrong_data = []
-    
     llm_ignore_data = []
-    
     raw_data = []
 
     for record in read_jsonl(input_file):
@@ -53,13 +53,20 @@ def process_jsonl(input_file, output_file, wrong_file, dataset_type):
         
         # Find the cutoff point
         cut_position = None
+        cut_front_position = None
         for keyword in keywords:
             match = re.search(re.escape(keyword), response, re.IGNORECASE)
             if match:
                 cut_position = match.end()
                 break
 
-        if cut_position:
+        for keyword in cutoff_front_words:
+            match = re.search(re.escape(keyword), response, re.IGNORECASE)
+            if match:
+                cut_front_position = match.end()
+                break
+        
+        if cut_position and cut_front_position and cut_front_position < cut_position:
             # Trim leading colons or whitespace after the cutoff point
             while cut_position < len(response) and response[cut_position] in [":", " ", "\n"]:
                 cut_position += 1
@@ -79,8 +86,6 @@ def process_jsonl(input_file, output_file, wrong_file, dataset_type):
                 "input": question,
                 "output": response
             })
-
-
         
     output_file_name = output_file.split("/")[-1]
     path_to_output = "/".join(output_file.split("/")[:-1])
@@ -99,7 +104,6 @@ def process_jsonl(input_file, output_file, wrong_file, dataset_type):
         write_jsonl(f"{wrong_file}", wrong_data)
         logger.warning(f"[INFO] Failed data has been saved to {wrong_file}")
 
-    
     # append the processed data to the output file
     # Write processed data to a new JSONL file
     write_jsonl(output_file, processed_data, append=True)

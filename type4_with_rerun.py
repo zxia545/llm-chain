@@ -20,6 +20,8 @@ def process_jsonl(input_file, output_file, wrong_file, dataset_type):
         "WizardCoder": ["Refactored_Code", "Refactored Code"]
     }
 
+    cutoff_front_words = ["Addressing_Feedback", "Addressing Feedback"]
+
     if dataset_type not in cutoff_keywords:
         raise ValueError(f"Unsupported dataset type: {dataset_type}")
 
@@ -29,9 +31,7 @@ def process_jsonl(input_file, output_file, wrong_file, dataset_type):
 
     processed_data = []
     wrong_data = []
-    
     llm_ignore_data = []
-    
     raw_data = []
 
     for record in read_jsonl(input_file):
@@ -40,6 +40,7 @@ def process_jsonl(input_file, output_file, wrong_file, dataset_type):
         question = record.get("q", "")
         response = record.get("response", "")
 
+        
         if "[LLM Error]" in response:
             logger.warning(f'Index {idx} has LLM Error - It maybe too long that pass the max token limit')
             llm_ignore_data.append({
@@ -51,13 +52,20 @@ def process_jsonl(input_file, output_file, wrong_file, dataset_type):
         
         # Find the cutoff point
         cut_position = None
+        cut_front_position = None
         for keyword in keywords:
             match = re.search(re.escape(keyword), response, re.IGNORECASE)
             if match:
                 cut_position = match.end()
                 break
 
-        if cut_position:
+        for keyword in cutoff_front_words:
+            match = re.search(re.escape(keyword), response, re.IGNORECASE)
+            if match:
+                cut_front_position = match.end()
+                break
+        
+        if cut_position and cut_front_position and cut_front_position < cut_position:
             # Trim leading colons or whitespace after the cutoff point
             while cut_position < len(response) and response[cut_position] in [":", " ", "\n"]:
                 cut_position += 1
@@ -67,8 +75,8 @@ def process_jsonl(input_file, output_file, wrong_file, dataset_type):
                 "input": question,
                 "output": refined_response
             })
-            raw_data.append(record)
             
+            raw_data.append(record)
         else:
             refined_response = response.strip()  # Keep the entire response if no keyword is found
             fail_count += 1
@@ -77,14 +85,12 @@ def process_jsonl(input_file, output_file, wrong_file, dataset_type):
                 "input": question,
                 "output": response
             })
-
         
     output_file_name = output_file.split("/")[-1]
     path_to_output = "/".join(output_file.split("/")[:-1])
     
     raw_output_name = output_file_name.replace("cut", "cut_raw")
     raw_output_file = f"{path_to_output}/{raw_output_name}"
-    
     
     llm_error_file_path = f"{path_to_output}/llm_error_{output_file_name}"
     if len(llm_ignore_data) > 0:
@@ -97,11 +103,10 @@ def process_jsonl(input_file, output_file, wrong_file, dataset_type):
         write_jsonl(f"{wrong_file}", wrong_data)
         logger.warning(f"[INFO] Failed data has been saved to {wrong_file}")
 
-    
     # append the processed data to the output file
     # Write processed data to a new JSONL file
     write_jsonl(output_file, processed_data, append=True)
-    
+    # Append the raw data to the raw file
     write_jsonl(raw_output_file, raw_data, append=True)
 
     # Print failure statistics

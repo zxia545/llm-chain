@@ -28,9 +28,10 @@ def process_eval_results(folder_path, output_excel):
                     plus_win_count = 0
 
                     for key, value in eval_data.items():
-                        if value.get("base_status") == "pass":
+                        first_item = value[0] if isinstance(value, list) and value else {}
+                        if first_item.get("base_status") == "pass":
                             base_win_count += 1
-                        if value.get("plus_status") == "pass":
+                        if first_item.get("plus_status") == "pass":
                             plus_win_count += 1
 
                     base_accuracy = (base_win_count / total_count * 100) if total_count > 0 else 0
@@ -39,18 +40,20 @@ def process_eval_results(folder_path, output_excel):
                     # Add results for this file
                     results.append({
                         "FileName": file_name,
-                        dataset_type: f"{base_accuracy:.2f}%",
-                        f"{dataset_type}++": f"{plus_accuracy:.2f}%",
-                        "Average": None
+                        dataset_type: base_accuracy,
+                        f"{dataset_type}++": plus_accuracy
                     })
 
     # Merge and calculate averages
     df = pd.DataFrame(results)
-    columns = [col for col in df.columns if col not in ["FileName", "Average"]]
+    if "FileName" in df.columns:
+        df = df.groupby("FileName", as_index=False).mean()
 
-    for index, row in df.iterrows():
-        accuracies = [float(row[col].strip('%')) for col in columns if row[col] is not None]
-        df.at[index, "Average"] = f"{(sum(accuracies) / len(accuracies)):.2f}%"
+    columns = [col for col in df.columns if col not in ["FileName"]]
+    for col in columns:
+        df[col] = df[col].apply(lambda x: f"{x:.2f}%")
+
+    df["Average"] = df[columns].apply(lambda row: f"{row.astype(str).str.rstrip('%').astype(float).mean():.2f}%", axis=1)
 
     # Save to Excel
     df.to_excel(output_excel, index=False)

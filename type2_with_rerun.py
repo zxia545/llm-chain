@@ -126,76 +126,369 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
     The prompts are tailored to improve quality by reinforcing focus, structure, and depth,
     encouraging thoughtful doubts and meaningful improvements.
     """
+    # if dataset_type == "Infinity-Instruct":
+    #     if step == 1:
+    #         return [
+    #             {"role": "system", "content": "You are an AI assistant designed to provide accurate, clear, complete, and helpful answers to user instructions."},
+    #             {"role": "user", "content": question}
+    #         ]
+
+
     if dataset_type == "Infinity-Instruct":
+        # ------------------ Step 1 ------------------
         if step == 1:
             return [
-                {"role": "system", "content": "You are an AI assistant designed to provide accurate, clear, complete, and helpful answers to user instructions."},
-                {"role": "user", "content": question}
+                {
+                    "role": "system",
+                    "content": "You are an AI assistant designed to provide accurate, clear, complete, and helpful answers to user instructions."
+                },
+                {
+                    "role": "user",
+                    "content": question
+                }
             ]
+
+
+        # elif step == 2:
+        #     return [
+        #         {"role": "system", "content": "You are an AI assistant. You will read the question and an answer provided by another AI assistant. If there is anything in the answer you find unclear, incomplete, or confusing, ask specific questions to better understand those parts."},
+        #         {"role": "user", "content": f"Question: {question}\nHere is the answer:\n{answer}\n\nPlease list any questions you have about details or reasoning you do not fully understand."}
+        #     ]
+        # ------------------ Step 2 ------------------
+
+
+
+
+        # ------------------ Step 2 ------------------
         elif step == 2:
             return [
-                {"role": "system", "content": "You are an AI assistant. You will read the question and an answer provided by another AI assistant. If there is anything in the answer you find unclear, incomplete, or confusing, ask specific questions to better understand those parts."},
-                {"role": "user", "content": f"Question: {question}\nHere is the answer:\n{answer}\n\nPlease list any questions you have about details or reasoning you do not fully understand."}
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an AI assistant. You will read the question and an answer provided by another AI assistant. "
+                        "If there is anything in the answer you find unclear, incomplete, or confusing, ask specific questions "
+                        "to better understand or improve those parts."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"Question: {question}\n"
+                        f"Here is the answer:\n{answer}\n\n"
+                        # "Please list specific and relevant questions about any details, reasoning, or unclear parts of the answer."
+                        "Please list any questions you have."
+                    )
+                }
             ]
+
+
+        # elif step == 3:
+        #     return [
+        #         {"role": "system", "content": "You are an AI assistant designed to provide accurate, clear, complete, and helpful answers to user instructions."},
+        #         {"role": "user", "content": question},
+        #         {"role": "assistant", "content": answer},
+        #         {"role": "user", "content": f"You are tasked with improving an answer based on the questions provided. Update and refine the original answer to address these questions clearly and effectively.\nQuestion: {question}\nPrevious Answer: {answer}\nFeedback: {doubts}\n\nStructure your response in two sections: 'Addressing_Feedback:' followed by detailed responses to the feedback, and 'Final_Answer:' with the updated and improved answer.\nPlease update the answer accordingly:"}
+        #     ]
+
+        # ------------------ Step 3 ------------------
         elif step == 3:
             return [
-                {"role": "system", "content": "You are an AI assistant designed to provide accurate, clear, complete, and helpful answers to user instructions."},
-                {"role": "user", "content": question},
-                {"role": "assistant", "content": answer},
-                {"role": "user", "content": f"You are tasked with improving an answer based on the questions provided. Update and refine the original answer to address these questions clearly and effectively.\nQuestion: {question}\nPrevious Answer: {answer}\nFeedback: {doubts}\n\nStructure your response in two sections: 'Addressing_Feedback:' followed by detailed responses to the feedback, and 'Final_Answer:' with the updated and improved answer.\nPlease update the answer accordingly:"}
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an AI assistant. You will read the question and an answer provided by another AI assistant. "
+                        "If there is anything in the answer you find unclear, incomplete, or confusing, ask specific questions "
+                        "to better understand or improve those parts."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": question
+                },
+                {
+                    "role": "assistant",
+                    "content": answer
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"You are tasked with improving an answer based on the questions provided. "
+                        "Update and refine the original answer to address these questions clearly and effectively.\n\n"
+
+                        "Importantly, you MUST ensure your final answer still thoroughly addresses the original question while incorporating the new feedback.\n\n"
+
+                        f"Question: {question}\nPrevious Answer: {answer}\nFeedback: {doubts}"
+
+                        "Additionally, you MUST follow the exact output format requested below: "
+                        "Do not add extra sections, do not change section titles, and do not omit any required sections."
+
+                        "Please rewrite the answer accordingly.\n\n"
+                        "Output Format (strictly follow):\n"
+                        "Addressing Feedback:\n"
+                        "1. ...\n"
+                        "2. ...\n\n"
+                        "Final Answer:\n"
+                        "<<<Your final updated answer here>>>\n"
+                    )
+                }
             ]
+
     elif dataset_type == "MAmmoTH":
+        # ------------------ Step 1 ------------------
         if step == 1:
             question_lower = question.lower()
             if "program" in question_lower or "python" in question_lower:
+                # return [
+                #     {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations."},
+                #     {"role": "user", "content": question}
+                # ]
                 return [
-                    {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations."},
-                    {"role": "user", "content": question}
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations. "
+                            # "Break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."
+                        )
+                    },
+                    {
+                        "role": "user",
+                        "content": question
+                    }
                 ]
             else:
+                # return [
+                #     {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations. For every question, break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."},
+                #     {"role": "user", "content": question}
+                # ]
                 return [
-                    {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations. For every question, break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."},
-                    {"role": "user", "content": question}
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations. "
+                            "Break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."
+                        )
+                    },
+                    {
+                        "role": "user",
+                        "content": question
+                    }
                 ]
+
+
         elif step == 2:
+            # return [
+            #     {"role": "system", "content": "You are an AI assistant. You will read the math problem and a solution provided by another AI assistant. If any step in the solution is unclear, lacks justification, or appears incomplete, ask specific questions to clarify or better understand those parts."},
+            #     {"role": "user", "content": f"Math Problem: {question}\nHere is the solution:\n{answer}\n\nPlease list your questions about the reasoning steps or details you do not fully understand."}
+            # ]
+
             return [
-                {"role": "system", "content": "You are an AI assistant. You will read the math problem and a solution provided by another AI assistant. If any step in the solution is unclear, lacks justification, or appears incomplete, ask specific questions to clarify or better understand those parts."},
-                {"role": "user", "content": f"Math Problem: {question}\nHere is the solution:\n{answer}\n\nPlease list your questions about the reasoning steps or details you do not fully understand."}
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an AI assistant. You will read the math problem and a solution provided by another AI assistant. "
+                        "Ask specific questions about any steps or justifications that are unclear, incomplete, or appear incorrect."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"Math Problem: {question}\n"
+                        f"Here is the solution:\n{answer}\n\n"
+                        "Please list specific questions about this solution."
+                    )
+                }
             ]
+            
         elif step == 3:
             question_lower = question.lower()
             if "program" in question_lower or "python" in question_lower:
+                # return [
+                #     {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations."},
+                #     {"role": "user", "content": question},
+                #     {"role": "assistant", "content": answer},
+                #     {"role": "user", "content": f"You are tasked with improving a math solution based on the questions provided. Refine and enhance the original solution to address these questions, ensuring accuracy, logical reasoning, and clear explanations.\nMath Problem: {question}\nPrevious Solution: {answer}\nFeedback: {doubts}\n\nStructure your response into two sections: 'Addressing_Feedback:' followed by responses to the feedback and 'Final_Solution:' with the refined and accurate solution.\nPlease update the solution accordingly:"}
+                # ]
+
                 return [
-                    {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations."},
-                    {"role": "user", "content": question},
-                    {"role": "assistant", "content": answer},
-                    {"role": "user", "content": f"You are tasked with improving a math solution based on the questions provided. Refine and enhance the original solution to address these questions, ensuring accuracy, logical reasoning, and clear explanations.\nMath Problem: {question}\nPrevious Solution: {answer}\nFeedback: {doubts}\n\nStructure your response into two sections: 'Addressing_Feedback:' followed by responses to the feedback and 'Final_Solution:' with the refined and accurate solution.\nPlease update the solution accordingly:"}
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations. "
+                            # "Break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."
+                        )
+                    },
+                    {
+                        "role": "user",
+                        "content": question
+                    },
+                    {
+                        "role": "assistant",
+                        "content": answer
+                    },
+                    {
+                        "role": "user",
+                        "content": (
+                            "You are tasked with improving a math solution based on the questions provided. "
+                            "Refine and enhance the original solution to address these questions, ensuring accuracy, logical reasoning, and clear explanations.\n"
+
+                            "Importantly, you MUST ensure your final answer still thoroughly addresses the original question while incorporating the new feedback.\n\n"
+
+                            f"Math Problem: {question}\nPrevious Solution: {answer}\nFeedback: {doubts}\n\n"
+
+                            "Additionally, you MUST follow the exact output format requested below: "
+                            "Do not add extra sections, do not change section titles, and do not omit any required sections."
+
+                            "Please rewrite the answer accordingly.\n\n"
+                            "Output Format (strictly follow):\n"
+                            "Addressing Feedback:\n"
+                            "1. ...\n"
+                            "2. ...\n\n"
+                            "Final Solution:\n"
+                            "<<<Your final updated answer here>>>\n"
+
+                        )
+                    }
                 ]
             else:
+                # return [
+                #     {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations. For every question, break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."},
+                #     {"role": "user", "content": question},
+                #     {"role": "assistant", "content": answer},
+                #     {"role": "user", "content": f"You are tasked with improving a math solution based on the questions provided. Refine and enhance the original solution to address these questions, ensuring accuracy, logical reasoning, and clear explanations.\nMath Problem: {question}\nPrevious Solution: {answer}\nFeedback: {doubts}\n\nStructure your response into two sections: 'Addressing_Feedback:' followed by responses to the feedback and 'Final_Solution:' with the refined and accurate solution.\nPlease update the solution accordingly:"}
+                # ]
+
                 return [
-                    {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations. For every question, break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."},
-                    {"role": "user", "content": question},
-                    {"role": "assistant", "content": answer},
-                    {"role": "user", "content": f"You are tasked with improving a math solution based on the questions provided. Refine and enhance the original solution to address these questions, ensuring accuracy, logical reasoning, and clear explanations.\nMath Problem: {question}\nPrevious Solution: {answer}\nFeedback: {doubts}\n\nStructure your response into two sections: 'Addressing_Feedback:' followed by responses to the feedback and 'Final_Solution:' with the refined and accurate solution.\nPlease update the solution accordingly:"}
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations. "
+                            "Break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."
+                        )
+                    },
+                    {
+                        "role": "user",
+                        "content": question
+                    },
+                    {
+                        "role": "assistant",
+                        "content": answer
+                    },
+                    {
+                        "role": "user",
+                        "content": (
+                            "You are tasked with improving a math solution based on the questions provided. "
+                            "Refine and enhance the original solution to address these questions, ensuring accuracy, logical reasoning, and clear explanations.\n"
+
+                            "Importantly, you MUST ensure your final answer still thoroughly addresses the original question while incorporating the new feedback.\n\n"
+
+                            f"Math Problem: {question}\nPrevious Solution: {answer}\nFeedback: {doubts}\n\n"
+
+                            "Additionally, you MUST follow the exact output format requested below: "
+                            "Do not add extra sections, do not change section titles, and do not omit any required sections."
+
+                            "Please rewrite the answer accordingly.\n\n"
+                            "Output Format (strictly follow):\n"
+                            "Addressing Feedback:\n"
+                            "1. ...\n"
+                            "2. ...\n\n"
+                            "Final Solution:\n"
+                            "<<<Your final updated answer here>>>\n"
+                        )
+                    }
                 ]
     elif dataset_type == "WizardCoder":
+        # ------------------ Step 1 ------------------
         if step == 1:
             return [
-                {"role": "system", "content": "You are an expert programmer and problem solver. Your task is to provide correct, efficient, readable, and well-structured code solutions to programming problems, adhering to best coding practices throughout."},
-                {"role": "user", "content": question}
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an expert programmer and problem solver. Your task is to provide correct, efficient, readable, and well-structured "
+                        "code solutions to programming problems, adhering to best coding practices throughout."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": question
+                }
             ]
+
+        # elif step == 2:
+        #     return [
+        #         {"role": "system", "content": "You are an AI assistant. You will read the programming problem and a proposed code solution. If there is any part of the solution or its reasoning you find unclear or confusing, ask specific questions to clarify those parts."},
+        #         {"role": "user", "content": f"Programming Problem: {question}\nHere is the code solution:\n{answer}\n\nPlease list your questions about any unclear logic, implementation detail, or part of the solution you do not fully understand."}
+        #     ]
+
+        # ------------------ Step 2 ------------------
         elif step == 2:
             return [
-                {"role": "system", "content": "You are an AI assistant. You will read the programming problem and a proposed code solution. If there is any part of the solution or its reasoning you find unclear or confusing, ask specific questions to clarify those parts."},
-                {"role": "user", "content": f"Programming Problem: {question}\nHere is the code solution:\n{answer}\n\nPlease list your questions about any unclear logic, implementation detail, or part of the solution you do not fully understand."}
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an AI assistant. You will read the programming problem and a proposed code solution from another AI assistant. "
+                        "If there is any part of the solution or its reasoning you find unclear or confusing, ask specific questions to clarify those parts."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"Programming Problem: {question}\n"
+                        f"Here is the code solution:\n{answer}\n\n"
+                        "Please list your questions about any unclear logic, implementation detail, or part of the solution you do not fully understand."
+                    )
+                }
             ]
+
+        # elif step == 3:
+        #     return [
+        #         {"role": "system", "content": "You are an expert programmer and problem solver. Your task is to provide correct, efficient, readable, and well-structured code solutions to programming problems, adhering to best coding practices throughout."},
+        #         {"role": "user", "content": question},
+        #         {"role": "assistant", "content": answer},
+        #         {"role": "user", "content": f"You are tasked with improving a code solution based on the questions provided. Refactor, correct, or enhance the code to address these questions, ensuring it is correct, efficient, readable, and adheres to best practices.\nProgramming Problem: {question}\nPrevious Code Solution: {answer}\nFeedback: {doubts}\n\nStructure your response into two sections: 'Addressing_Feedback:' with detailed responses to the feedback, and 'Refactored_Code:' with the final improved code solution.\nPlease update the code solution accordingly."}
+        #     ]
+
+        # ------------------ Step 3 ------------------
         elif step == 3:
-            return [
-                {"role": "system", "content": "You are an expert programmer and problem solver. Your task is to provide correct, efficient, readable, and well-structured code solutions to programming problems, adhering to best coding practices throughout."},
-                {"role": "user", "content": question},
-                {"role": "assistant", "content": answer},
-                {"role": "user", "content": f"You are tasked with improving a code solution based on the questions provided. Refactor, correct, or enhance the code to address these questions, ensuring it is correct, efficient, readable, and adheres to best practices.\nProgramming Problem: {question}\nPrevious Code Solution: {answer}\nFeedback: {doubts}\n\nStructure your response into two sections: 'Addressing_Feedback:' with detailed responses to the feedback, and 'Refactored_Code:' with the final improved code solution.\nPlease update the code solution accordingly."}
-            ]
+                return [
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are an expert programmer and problem solver. Your task is to provide correct, efficient, readable, and well-structured "
+                            "code solutions to programming problems, adhering to best coding practices throughout."
+                        )
+                    },
+                    {
+                        "role": "user",
+                        "content": question
+                    },
+                    {
+                        "role": "assistant",
+                        "content": answer
+                    },
+                    {
+                        "role": "user",
+                        "content": (
+                            "You are tasked with improving a code solution based on the questions provided. "
+                            "Refactor, correct, or enhance the code to address these questions, ensuring it is correct, efficient, readable, and adheres to best practices.\n"
+
+                            "Importantly, you MUST ensure your final answer still thoroughly addresses the original question while incorporating the feedback.\n\n"
+
+                            f"\nProgramming Problem: {question}\nPrevious Code Solution: {answer}\nFeedback: {doubts}\n\n"
+
+                            "Additionally, you MUST follow the exact output format requested below: "
+                            "Do not add extra sections, do not change section titles, and do not omit any required sections."
+
+                            "Please rewrite the answer accordingly.\n\n"
+                            "Output Format (strictly follow):\n"
+                            "Addressing Feedback:\n"
+                            "1. ...\n"
+                            "2. ...\n\n"
+                            "Refactored Code:\n"
+                            "<<<Your final updated answer here>>>\n"
+                        )
+                    }
+                ]
+
     else:
         raise ValueError(f"Unsupported dataset type: {dataset_type}")
 

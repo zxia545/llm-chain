@@ -9,7 +9,27 @@ from openai import OpenAI
 import json
 import os
 
+def filter_and_fix_file(file_path):
+    """
+    Reads a JSONL file, removes invalid lines, and overwrites the original file with only valid lines.
+    """
+    valid_lines = []
+    
+    with open(file_path, 'r', encoding='utf-8') as infile:
+        for line in infile:
+            if line.strip():  # Check if the line is not empty
+                try:
+                    json.loads(line)  # Attempt to load the line as JSON
+                    valid_lines.append(line)  # Store valid lines
+                except json.JSONDecodeError:
+                    print(f"Invalid JSON line removed: {line.strip()}")  # Log invalid line
+    
+    # Overwrite the original file with valid lines
+    with open(file_path, 'w', encoding='utf-8') as outfile:
+        outfile.writelines(valid_lines)
+
 def read_jsonl(file_path):
+    filter_and_fix_file(file_path)
     with open(file_path, 'r', encoding='utf-8') as f:
         for line in f:
             if line.strip():

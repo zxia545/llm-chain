@@ -181,6 +181,15 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
                 }
             ]
 
+
+        # elif step == 3:
+        #     return [
+        #         {"role": "system", "content": "You are an AI assistant designed to provide accurate, clear, complete, and helpful answers to user instructions."},
+        #         {"role": "user", "content": question},
+        #         {"role": "assistant", "content": answer},
+        #         {"role": "user", "content": f"You are tasked with improving an answer based on the questions provided. Update and refine the original answer to address these questions clearly and effectively.\nQuestion: {question}\nPrevious Answer: {answer}\nFeedback: {doubts}\n\nStructure your response in two sections: 'Addressing_Feedback:' followed by detailed responses to the feedback, and 'Final_Answer:' with the updated and improved answer.\nPlease update the answer accordingly:"}
+        #     ]
+
         # ------------------ Step 3 ------------------
         elif step == 3:
             return [
@@ -229,10 +238,6 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
         if step == 1:
             question_lower = question.lower()
             if "program" in question_lower or "python" in question_lower:
-                # return [
-                #     {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations."},
-                #     {"role": "user", "content": question}
-                # ]
                 return [
                     {
                         "role": "system",
@@ -247,6 +252,7 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
                     }
                 ]
             else:
+
                 return [
                     {
                         "role": "system",
@@ -263,6 +269,8 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
 
 
         elif step == 2:
+
+
             return [
                 {
                     "role": "system",
@@ -284,6 +292,8 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
         elif step == 3:
             question_lower = question.lower()
             if "program" in question_lower or "python" in question_lower:
+
+
                 return [
                     {
                         "role": "system",
@@ -303,28 +313,31 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
                     {
                         "role": "user",
                         "content": (
-                            "You are tasked with improving a math solution based on the questions provided. "
-                            "Refine and enhance the original solution to address these questions, ensuring accuracy, logical reasoning, and clear explanations.\n"
 
-                            "Importantly, you MUST ensure your final answer still thoroughly addresses the original question while incorporating the new feedback.\n\n"
+                            # "Refine the given math solution based on the provided feedback. Ensure accuracy, logical reasoning, and clear explanations while addressing feedback. "
+                            # "Ignore feedback that is irrelevant, unreasonable. "
+                            # "Always prioritize answering the original question clearly and logical."
 
-                            f"Math Problem: {question}\nPrevious Solution: {answer}\nFeedback: {doubts}\n\n"
+                            "Refine the given math solution based on the feedback. Ensure the solution is accurate, logical, and clearly explained. "
+                            "Ignore feedback that is irrelevant, unreasonable. "
+                            # "Always prioritize answering the original question clearly, logical and avoid redundant explanations."
+                            "Always prioritize answering the math problem clearly, logical, and avoid explanations unrelated to the math problem."
+                            "Follow the exact output format without adding, changing, or omitting sections."
 
-                            "Additionally, you MUST follow the exact output format requested below: "
-                            "Do not add extra sections, do not change section titles, and do not omit any required sections."
-
-                            "Please rewrite the answer accordingly.\n\n"
-                            "Output Format (strictly follow):\n"
+                            f"Feedback: {doubts}\n\n"
+                            "Rewrite the math solution accordingly.\n\n"
+                            "Strictly follow this answer format (without adding, changing, or omitting sections):\n"
                             "Addressing Feedback:\n"
                             "1. ...\n"
                             "2. ...\n\n"
-                            "Final Solution:\n"
-                            "<<<Your final updated answer here>>>\n"
-
+                            # "Final Solution (The solution should be a Python program that fully answers the original question, balancing clarity and conciseness):\n"
+                            "Final Solution: (The solution should be a Python program and fully answer the math problem  while avoiding explanations unrelated to the math problem.):\n"
+                            "...\n"
                         )
                     }
                 ]
             else:
+
                 return [
                     {
                         "role": "system",
@@ -344,107 +357,43 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
                     {
                         "role": "user",
                         "content": (
-                            "You are tasked with improving a math solution based on the questions provided. "
-                            "Refine and enhance the original solution to address these questions, ensuring accuracy, logical reasoning, and clear explanations.\n"
+                            # "Refine the given math solution based on the provided feedback. Ensure accuracy, logical reasoning, and clear explanations while addressing all feedback. "
+                            # "The updated solution must fully answer the original question.\n\n"
+                            # "Refine the given math solution based on the provided feedback. Ensure accuracy, logical reasoning, and clear explanations while while addressing feedback. "
+                            # "Ignore feedback that is irrelevant, unreasonable. "
+                            # "Always prioritize answering the original question clearly and logical."
+                            # "Refine the given math solution based on the provided feedback. Ensure accuracy, logical reasoning, and clear explanations while addressing feedback. "
+                            # "Ignore feedback that is irrelevant, unreasonable. "
+                            # "Always prioritize answering the original question clearly and logical."
 
-                            "Importantly, you MUST ensure your final answer still thoroughly addresses the original question while incorporating the new feedback.\n\n"
+                            # "Refine the given math solution based on the feedback. Ensure the solution is accurate, logical, and clearly explained. "
+                            # "Ignore feedback that is irrelevant, unreasonable. "
+                            # "Always prioritize answering the original question clearly, logical and avoid redundant explanations."
+                            # # "The updated solution must fully answer the original question.\n\n"
+                            # "Follow the exact output format without adding, changing, or omitting sections."
 
-                            f"Math Problem: {question}\nPrevious Solution: {answer}\nFeedback: {doubts}\n\n"
 
-                            "Additionally, you MUST follow the exact output format requested below: "
-                            "Do not add extra sections, do not change section titles, and do not omit any required sections."
+                            "Refine the given math solution based on the feedback. Ensure the solution is accurate, logical, and clearly explained. "
+                            "Ignore feedback that is irrelevant, unreasonable. "
+                            # "Always prioritize answering the original question clearly, logical and avoid redundant explanations."
+                            "Always prioritize answering the math problem clearly, logical, and avoid explanations unrelated to the math problem."
+                            "Follow the exact output format without adding, changing, or omitting sections."
 
-                            "Please rewrite the answer accordingly.\n\n"
-                            "Output Format (strictly follow):\n"
+                            
+                            f"Feedback: {doubts}\n\n"
+                            "Rewrite the math solution accordingly.\n\n"
+                            "Strictly follow this answer format (without adding, changing, or omitting sections):\n"
                             "Addressing Feedback:\n"
                             "1. ...\n"
                             "2. ...\n\n"
-                            "Final Solution:\n"
-                            "<<<Your final updated answer here>>>\n"
+                            # "Final Solution (The solution should fully answer the original question, balancing clarity and conciseness):\n"
+                            # "Final Solution: (The solution should fully answer the math problem step by step while avoiding explanations unrelated to the math problem.):\n"
+                            "Final Solution: (Provide a clear, step-by-step solution to the math problem and avoiding explanations unrelated to the math problem.):\n"
+                            "...\n"
                         )
                     }
                 ]
-    elif dataset_type == "WizardCoder":
-        # ------------------ Step 1 ------------------
-        if step == 1:
-            return [
-                {
-                    "role": "system",
-                    "content": (
-                        "You are an expert programmer and problem solver. Your task is to provide correct, efficient, readable, and well-structured "
-                        "code solutions to programming problems, adhering to best coding practices throughout."
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": question
-                }
-            ]
-
-        # ------------------ Step 2 ------------------
-        elif step == 2:
-            return [
-                {
-                    "role": "system",
-                    "content": (
-                        "You are an AI assistant. You will read the programming problem and a proposed code solution from another AI assistant. "
-                        "If there is any part of the solution or its reasoning you find unclear or confusing, ask specific questions to clarify those parts."
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"Programming Problem: {question}\n"
-                        f"Here is the code solution:\n{answer}\n\n"
-                        "Please list your questions about any unclear logic, implementation detail, or part of the solution you do not fully understand."
-                    )
-                }
-            ]
-        # ------------------ Step 3 ------------------
-        elif step == 3:
-                return [
-                    {
-                        "role": "system",
-                        "content": (
-                            "You are an expert programmer and problem solver. Your task is to provide correct, efficient, readable, and well-structured "
-                            "code solutions to programming problems, adhering to best coding practices throughout."
-                        )
-                    },
-                    {
-                        "role": "user",
-                        "content": question
-                    },
-                    {
-                        "role": "assistant",
-                        "content": answer
-                    },
-                    {
-                        "role": "user",
-                        "content": (
-                            "You are tasked with improving a code solution based on the questions provided. "
-                            "Refactor, correct, or enhance the code to address these questions, ensuring it is correct, efficient, readable, and adheres to best practices.\n"
-
-                            "Importantly, you MUST ensure your final answer still thoroughly addresses the original question while incorporating the feedback.\n\n"
-
-                            f"\nProgramming Problem: {question}\nPrevious Code Solution: {answer}\nFeedback: {doubts}\n\n"
-
-                            "Additionally, you MUST follow the exact output format requested below: "
-                            "Do not add extra sections, do not change section titles, and do not omit any required sections."
-
-                            "Please rewrite the answer accordingly.\n\n"
-                            "Output Format (strictly follow):\n"
-                            "Addressing Feedback:\n"
-                            "1. ...\n"
-                            "2. ...\n\n"
-                            "Refactored Code:\n"
-                            "<<<Your final updated answer here>>>\n"
-                        )
-                    }
-                ]
-
-    else:
-        raise ValueError(f"Unsupported dataset type: {dataset_type}")
-
+ 
 def save_partial_results(file_path, data, append=False):
     if data:
         write_jsonl(file_path, data, append=append)

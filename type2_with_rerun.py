@@ -1,6 +1,6 @@
 import argparse
 import os
-from utils import read_jsonl, write_jsonl, start_vllm_server, stop_vllm_server, chat_completion
+from utils import read_jsonl, write_jsonl, start_vllm_server, stop_vllm_server, chat_completion, start_vllm_server_with_gpus, allocate_gpus
 from concurrent.futures import ThreadPoolExecutor
 import time 
 import logging
@@ -181,15 +181,6 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
                 }
             ]
 
-
-        # elif step == 3:
-        #     return [
-        #         {"role": "system", "content": "You are an AI assistant designed to provide accurate, clear, complete, and helpful answers to user instructions."},
-        #         {"role": "user", "content": question},
-        #         {"role": "assistant", "content": answer},
-        #         {"role": "user", "content": f"You are tasked with improving an answer based on the questions provided. Update and refine the original answer to address these questions clearly and effectively.\nQuestion: {question}\nPrevious Answer: {answer}\nFeedback: {doubts}\n\nStructure your response in two sections: 'Addressing_Feedback:' followed by detailed responses to the feedback, and 'Final_Answer:' with the updated and improved answer.\nPlease update the answer accordingly:"}
-        #     ]
-
         # ------------------ Step 3 ------------------
         elif step == 3:
             return [
@@ -256,10 +247,6 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
                     }
                 ]
             else:
-                # return [
-                #     {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations. For every question, break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."},
-                #     {"role": "user", "content": question}
-                # ]
                 return [
                     {
                         "role": "system",
@@ -276,11 +263,6 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
 
 
         elif step == 2:
-            # return [
-            #     {"role": "system", "content": "You are an AI assistant. You will read the math problem and a solution provided by another AI assistant. If any step in the solution is unclear, lacks justification, or appears incomplete, ask specific questions to clarify or better understand those parts."},
-            #     {"role": "user", "content": f"Math Problem: {question}\nHere is the solution:\n{answer}\n\nPlease list your questions about the reasoning steps or details you do not fully understand."}
-            # ]
-
             return [
                 {
                     "role": "system",
@@ -302,13 +284,6 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
         elif step == 3:
             question_lower = question.lower()
             if "program" in question_lower or "python" in question_lower:
-                # return [
-                #     {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations."},
-                #     {"role": "user", "content": question},
-                #     {"role": "assistant", "content": answer},
-                #     {"role": "user", "content": f"You are tasked with improving a math solution based on the questions provided. Refine and enhance the original solution to address these questions, ensuring accuracy, logical reasoning, and clear explanations.\nMath Problem: {question}\nPrevious Solution: {answer}\nFeedback: {doubts}\n\nStructure your response into two sections: 'Addressing_Feedback:' followed by responses to the feedback and 'Final_Solution:' with the refined and accurate solution.\nPlease update the solution accordingly:"}
-                # ]
-
                 return [
                     {
                         "role": "system",
@@ -350,13 +325,6 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
                     }
                 ]
             else:
-                # return [
-                #     {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations. For every question, break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."},
-                #     {"role": "user", "content": question},
-                #     {"role": "assistant", "content": answer},
-                #     {"role": "user", "content": f"You are tasked with improving a math solution based on the questions provided. Refine and enhance the original solution to address these questions, ensuring accuracy, logical reasoning, and clear explanations.\nMath Problem: {question}\nPrevious Solution: {answer}\nFeedback: {doubts}\n\nStructure your response into two sections: 'Addressing_Feedback:' followed by responses to the feedback and 'Final_Solution:' with the refined and accurate solution.\nPlease update the solution accordingly:"}
-                # ]
-
                 return [
                     {
                         "role": "system",
@@ -413,12 +381,6 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
                 }
             ]
 
-        # elif step == 2:
-        #     return [
-        #         {"role": "system", "content": "You are an AI assistant. You will read the programming problem and a proposed code solution. If there is any part of the solution or its reasoning you find unclear or confusing, ask specific questions to clarify those parts."},
-        #         {"role": "user", "content": f"Programming Problem: {question}\nHere is the code solution:\n{answer}\n\nPlease list your questions about any unclear logic, implementation detail, or part of the solution you do not fully understand."}
-        #     ]
-
         # ------------------ Step 2 ------------------
         elif step == 2:
             return [
@@ -438,15 +400,6 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
                     )
                 }
             ]
-
-        # elif step == 3:
-        #     return [
-        #         {"role": "system", "content": "You are an expert programmer and problem solver. Your task is to provide correct, efficient, readable, and well-structured code solutions to programming problems, adhering to best coding practices throughout."},
-        #         {"role": "user", "content": question},
-        #         {"role": "assistant", "content": answer},
-        #         {"role": "user", "content": f"You are tasked with improving a code solution based on the questions provided. Refactor, correct, or enhance the code to address these questions, ensuring it is correct, efficient, readable, and adheres to best practices.\nProgramming Problem: {question}\nPrevious Code Solution: {answer}\nFeedback: {doubts}\n\nStructure your response into two sections: 'Addressing_Feedback:' with detailed responses to the feedback, and 'Refactored_Code:' with the final improved code solution.\nPlease update the code solution accordingly."}
-        #     ]
-
         # ------------------ Step 3 ------------------
         elif step == 3:
                 return [
@@ -590,7 +543,6 @@ def main():
 
         save_partial_results(step1_file, step1_data, append=True)
         stop_vllm_server(process_llm1)
-
         # Step 2: <q, a> -> LLM2 -> t
         logger.warning("[INFO] Step2: <q, a> -> LLM2 -> t")
         process_llm2 = start_vllm_server(args.llm2_model, args.llm2_name, args.port2, args.gpu)
@@ -644,94 +596,108 @@ def main():
     !!! This is rerun the output section !!!
     """
     rerun_input_jsonl = args.wrong_jsonl
-    bypass_step1_process = None
+    args.threads = args.threads//2
+    
+    total_gpus = args.gpu
+    processes = 2
+    
+    gpu_allocations = allocate_gpus(total_gpus, processes)
+    models_and_ports = [
+        (args.llm1_model, args.llm1_name, args.port1),
+        (args.llm2_model, args.llm2_name, args.port2)
+    ]
+
+    processes = []
+    
+    for i, (model_path, model_name, port) in enumerate(models_and_ports):
+        process = start_vllm_server_with_gpus(model_path, model_name, port, gpu_allocations[i])
+        processes.append(process)
+    
+    
     logger.warning("[SECTION2] - Start the rerun data processing and generate the output jsonl file")
-    for i in range(20):
-        # Step 1: q -> LLM1 -> a
-        logger.warning("[INFO] Step1: q -> LLM1 -> a")
-        if bypass_step1_process is None:
-            process_llm1 = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
-        else:
-            process_llm1 = bypass_step1_process
-            bypass_step1_process = None
+    try:
+        for i in range(20):
+            # Step 1: q -> LLM1 -> a
+            logger.warning("[INFO] Step1: q -> LLM1 -> a")
+            # NOTE: we load the rerun input jsonl
+            data_list = list(read_jsonl(rerun_input_jsonl))
             
-        # NOTE: we load the rerun input jsonl
-        data_list = list(read_jsonl(rerun_input_jsonl))
-        
-        step1_file = f"{output_folder_path}/tmp_rerun_type2_step1_{os.path.basename(args.input_jsonl)}"
-        step1_data = []
-        api_base_llm1 = f"http://localhost:{args.port1}"
-        
-        # remove the existing output file if it exists
-        if os.path.exists(step1_file):
-            os.remove(step1_file)
+            step1_file = f"{output_folder_path}/tmp_rerun_type2_step1_{os.path.basename(args.input_jsonl)}"
+            step1_data = []
+            api_base_llm1 = f"http://localhost:{args.port1}"
+            
+            # remove the existing output file if it exists
+            if os.path.exists(step1_file):
+                os.remove(step1_file)
 
-        with ThreadPoolExecutor(max_workers=args.threads) as executor:
-            futures = [executor.submit(process_record, api_base_llm1, args.llm1_name, args.dataset_type, 1, record) for record in data_list]
-            for i, future in enumerate(futures, start=1):
-                step1_data.append(future.result())
-                if i % 2000 == 0:
-                    save_partial_results(step1_file, step1_data, append=True)
+            with ThreadPoolExecutor(max_workers=args.threads) as executor:
+                futures = [executor.submit(process_record, api_base_llm1, args.llm1_name, args.dataset_type, 1, record) for record in data_list]
+                for i, future in enumerate(futures, start=1):
+                    step1_data.append(future.result())
+                    if i % 2000 == 0:
+                        save_partial_results(step1_file, step1_data, append=True)
 
-        save_partial_results(step1_file, step1_data, append=True)
-        stop_vllm_server(process_llm1)
+            save_partial_results(step1_file, step1_data, append=True)
 
-        # Step 2: <q, a> -> LLM2 -> t
-        logger.warning("[INFO] Step2: <q, a> -> LLM2 -> t")
-        process_llm2 = start_vllm_server(args.llm2_model, args.llm2_name, args.port2, args.gpu)
-        step2_file = f"{output_folder_path}/tmp_rerun_type2_step2_{os.path.basename(args.input_jsonl)}"
-        step2_data = []
-        
-        step1_data_reloaded = list(read_jsonl(step1_file))
-        api_base_llm2 = f"http://localhost:{args.port2}"
-        
+            # Step 2: <q, a> -> LLM2 -> t
+            logger.warning("[INFO] Step2: <q, a> -> LLM2 -> t")
+            step2_file = f"{output_folder_path}/tmp_rerun_type2_step2_{os.path.basename(args.input_jsonl)}"
+            step2_data = []
+            
+            step1_data_reloaded = list(read_jsonl(step1_file))
+            api_base_llm2 = f"http://localhost:{args.port2}"
+            
 
-        if os.path.exists(step2_file):
-            os.remove(step2_file)
-        
-        
-        with ThreadPoolExecutor(max_workers=args.threads) as executor:
-            futures = [executor.submit(process_record, api_base_llm2, args.llm2_name, args.dataset_type, 2, record) for record in step1_data_reloaded]
-            for i, future in enumerate(futures, start=1):
-                step2_data.append(future.result())
-                if i % 2000 == 0:
-                    save_partial_results(step2_file, step2_data, append=True)
+            if os.path.exists(step2_file):
+                os.remove(step2_file)
+            
+            
+            with ThreadPoolExecutor(max_workers=args.threads) as executor:
+                futures = [executor.submit(process_record, api_base_llm2, args.llm2_name, args.dataset_type, 2, record) for record in step1_data_reloaded]
+                for i, future in enumerate(futures, start=1):
+                    step2_data.append(future.result())
+                    if i % 2000 == 0:
+                        save_partial_results(step2_file, step2_data, append=True)
 
-        save_partial_results(step2_file, step2_data, append=True)
-        stop_vllm_server(process_llm2)
+            save_partial_results(step2_file, step2_data, append=True)
 
-        # Step 3: <q, a, t> -> LLM1 -> a'
-        logger.warning("[INFO] Step3: <q, a, t> -> LLM1 -> a'")
-        process_llm1_step3 = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
-        step3_file = f"{output_folder_path}/tmp_rerun_type2_step3_{os.path.basename(args.input_jsonl)}"
-        step3_data = []
-        step2_data_reloaded = list(read_jsonl(step2_file))
+            # Step 3: <q, a, t> -> LLM1 -> a'
+            logger.warning("[INFO] Step3: <q, a, t> -> LLM1 -> a'")
+            process_llm1_step3 = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
+            step3_file = f"{output_folder_path}/tmp_rerun_type2_step3_{os.path.basename(args.input_jsonl)}"
+            step3_data = []
+            step2_data_reloaded = list(read_jsonl(step2_file))
 
 
-        if os.path.exists(step3_file):
-            os.remove(step3_file)
-        
-        with ThreadPoolExecutor(max_workers=args.threads) as executor:
-            futures = [executor.submit(process_record, api_base_llm1, args.llm1_name, args.dataset_type, 3, record) for record in step2_data_reloaded]
-            for i, future in enumerate(futures, start=1):
-                step3_data.append(future.result())
-                if i % 2000 == 0:
-                    save_partial_results(step3_file, step3_data, append=True)
+            if os.path.exists(step3_file):
+                os.remove(step3_file)
+            
+            with ThreadPoolExecutor(max_workers=args.threads) as executor:
+                futures = [executor.submit(process_record, api_base_llm1, args.llm1_name, args.dataset_type, 3, record) for record in step2_data_reloaded]
+                for i, future in enumerate(futures, start=1):
+                    step3_data.append(future.result())
+                    if i % 2000 == 0:
+                        save_partial_results(step3_file, step3_data, append=True)
 
-        save_partial_results(step3_file, step3_data, append=True)
-        
+            save_partial_results(step3_file, step3_data, append=True)
 
-        # The good result will be save to the output_jsonl  and the raw file
-        # The bad result will be save to the wrong_jsonl and then rerun again
-        failed_count = process_jsonl(step3_file, args.output_jsonl, args.wrong_jsonl, args.dataset_type)
-        if failed_count > 0:
-            logger.warning(f"[INFO] Rerunning Step1 as still {failed_count} failed to cut.")
-            bypass_step1_process = process_llm1_step3
-        else:
-            stop_vllm_server(process_llm1_step3)
-            logger.warning("[INFO] Type2 pipeline complete.")
-            break
-        
+            # The good result will be save to the output_jsonl  and the raw file
+            # The bad result will be save to the wrong_jsonl and then rerun again
+            failed_count = process_jsonl(step3_file, args.output_jsonl, args.wrong_jsonl, args.dataset_type)
+            if failed_count > 0:
+                logger.warning(f"[INFO] Rerunning Step1 as still {failed_count} failed to cut.")
+            else:
+                logger.warning("[INFO] Type2 pipeline complete.")
+                break
+    except Exception as e:
+        logger.error(f"[ERROR] {str(e)}")
+        # kill all process
+        for process in processes:
+            stop_vllm_server(process)
+    
+    # kill all process
+    for process in processes:
+        stop_vllm_server(process)
 
     
 

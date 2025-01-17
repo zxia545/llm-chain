@@ -1,7 +1,7 @@
 import argparse
 import os
 from concurrent.futures import ThreadPoolExecutor
-from utils import read_jsonl, write_jsonl, start_vllm_server, stop_vllm_server, chat_completion
+from utils import read_jsonl, write_jsonl, start_vllm_server, stop_vllm_server, chat_completion, start_vllm_server_with_gpus, allocate_gpus
 import logging
 import time
 import re
@@ -434,56 +434,82 @@ def main():
     !!! This is rerun the output section !!!
     """   
     rerun_input_jsonl = args.wrong_jsonl
+    
+    args.threads = args.threads//2
+    
+    total_gpus = args.gpu
+    processes = 2
+    
+    gpu_allocations = allocate_gpus(total_gpus, processes)
+    models_and_ports = [
+        (args.llm1_model, args.llm1_name, args.port1),
+        (args.llm2_model, args.llm2_name, args.port2)
+    ]
+
+    processes = []
+    
+    for i, (model_path, model_name, port) in enumerate(models_and_ports):
+        process = start_vllm_server_with_gpus(model_path, model_name, port, gpu_allocations[i])
+        processes.append(process)
+        
+        
     logger.warning("[SECTION2] - Start the rerun data processing and generate the output jsonl file") 
-    for i in range(20):
-        # Step 1: <q, a_std> -> LLM2 -> t
-        logger.warning("[INFO] Step1: <q, a_std> -> LLM2 -> t")
-        process_llm2 = start_vllm_server(args.llm2_model, args.llm2_name, args.port2, args.gpu)
-        data_list = list(read_jsonl(rerun_input_jsonl))
-        step1_file = f"{output_folder_path}/tmp_rerun_type3_step1_{os.path.basename(args.input_jsonl)}"
-        step1_data = []
-        api_base_llm2 = f"http://localhost:{args.port2}"
-        
-        if os.path.exists(step1_file):
-            os.remove(step1_file)
+    try:
+        for i in range(20):
+            # Step 1: <q, a_std> -> LLM2 -> t
+            logger.warning("[INFO] Step1: <q, a_std> -> LLM2 -> t")
+            data_list = list(read_jsonl(rerun_input_jsonl))
+            step1_file = f"{output_folder_path}/tmp_rerun_type3_step1_{os.path.basename(args.input_jsonl)}"
+            step1_data = []
+            api_base_llm2 = f"http://localhost:{args.port2}"
+            
+            if os.path.exists(step1_file):
+                os.remove(step1_file)
 
-        with ThreadPoolExecutor(max_workers=args.threads) as executor:
-            futures = [executor.submit(process_record, api_base_llm2, args.llm2_name, args.dataset_type, 1, record) for record in data_list]
-            for i, future in enumerate(futures, start=1):
-                step1_data.append(future.result())
-                if i % 2000 == 0:
-                    save_partial_results(step1_file, step1_data, append=True)
+            with ThreadPoolExecutor(max_workers=args.threads) as executor:
+                futures = [executor.submit(process_record, api_base_llm2, args.llm2_name, args.dataset_type, 1, record) for record in data_list]
+                for i, future in enumerate(futures, start=1):
+                    step1_data.append(future.result())
+                    if i % 2000 == 0:
+                        save_partial_results(step1_file, step1_data, append=True)
 
-        save_partial_results(step1_file, step1_data, append=True)
-        stop_vllm_server(process_llm2)
+            save_partial_results(step1_file, step1_data, append=True)
 
-        # Step 2: <q, a_std, t> -> LLM1 -> a'
-        logger.warning("[INFO] Step2: <q, a_std, t> -> LLM1 -> a'")
-        process_llm1 = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
-        step2_file = f"{output_folder_path}/tmp_rerun_type3_step2_{os.path.basename(args.input_jsonl)}"
-        step2_data = []
-        step1_data_reloaded = list(read_jsonl(step1_file))
-        api_base_llm1 = f"http://localhost:{args.port1}"
-        
-        if os.path.exists(step2_file):
-            os.remove(step2_file)
-        
-        with ThreadPoolExecutor(max_workers=args.threads) as executor:
-            futures = [executor.submit(process_record, api_base_llm1, args.llm1_name, args.dataset_type, 2, record) for record in step1_data_reloaded]
-            for i, future in enumerate(futures, start=1):
-                step2_data.append(future.result())
-                if i % 2000 == 0:
-                    save_partial_results(step2_file, step2_data, append=True)
+            # Step 2: <q, a_std, t> -> LLM1 -> a'
+            logger.warning("[INFO] Step2: <q, a_std, t> -> LLM1 -> a'")
+            step2_file = f"{output_folder_path}/tmp_rerun_type3_step2_{os.path.basename(args.input_jsonl)}"
+            step2_data = []
+            step1_data_reloaded = list(read_jsonl(step1_file))
+            api_base_llm1 = f"http://localhost:{args.port1}"
+            
+            if os.path.exists(step2_file):
+                os.remove(step2_file)
+            
+            with ThreadPoolExecutor(max_workers=args.threads) as executor:
+                futures = [executor.submit(process_record, api_base_llm1, args.llm1_name, args.dataset_type, 2, record) for record in step1_data_reloaded]
+                for i, future in enumerate(futures, start=1):
+                    step2_data.append(future.result())
+                    if i % 2000 == 0:
+                        save_partial_results(step2_file, step2_data, append=True)
 
-        save_partial_results(step2_file, step2_data, append=True)
-        stop_vllm_server(process_llm1)
+            save_partial_results(step2_file, step2_data, append=True)
+            failed_count = process_jsonl(step2_file, args.output_jsonl, args.wrong_jsonl, args.dataset_type)
+            if failed_count > 0:
+                logger.warning(f"[INFO] Rerunning Step1 as still {failed_count} failed to cut.")
+            else:
+                logger.warning("[INFO] Type3 pipeline complete.")
+                break
+    except Exception as e:
+        logger.error(f"[ERROR] {str(e)}")
         
-        failed_count = process_jsonl(step2_file, args.output_jsonl, args.wrong_jsonl, args.dataset_type)
-        if failed_count > 0:
-            logger.warning(f"[INFO] Rerunning Step1 as still {failed_count} failed to cut.")
-        else:
-            logger.warning("[INFO] Type3 pipeline complete.")
-            break
+        # kill all process
+        for process in processes:
+            stop_vllm_server(process)
+    
+    
+    # kill all process
+    for process in processes:
+        stop_vllm_server(process)
 
 if __name__ == "__main__":
     main()

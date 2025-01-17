@@ -189,7 +189,7 @@ def wait_for_server(url: str, timeout: int = 600):
         
 def stop_vllm_server(process):
     process.terminate()
-    # process.wait()
+    process.wait()
     print("[INFO] Stopped vLLM server.")
 
 

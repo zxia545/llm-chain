@@ -40,14 +40,9 @@ def process_jsonl(input_file, output_file, wrong_file, dataset_type):
         question = record.get("q", "")
         response = record.get("response", "")
 
-        
         if "[LLM Error]" in response:
             logger.warning(f'Index {idx} has LLM Error - It maybe too long that pass the max token limit')
-            llm_ignore_data.append({
-                "idx": idx,
-                "input": question,
-                "output": response
-            })
+            llm_ignore_data.append(record)
             continue
         
         # Find the cutoff point
@@ -82,8 +77,9 @@ def process_jsonl(input_file, output_file, wrong_file, dataset_type):
             fail_count += 1
             wrong_data.append({
                 "idx": idx,
-                "input": question,
-                "output": response
+                "q": question,
+                "a_std": record.get("a_std", ""),
+                "t": record.get("t", ""),
             })
         
     output_file_name = output_file.split("/")[-1]
@@ -373,6 +369,7 @@ def main():
     is_output_file_exists = os.path.exists(args.output_jsonl)
     
     
+    latest_vllm_process_id = None
     """
     !!! This is the first time running the script !!! 
     """
@@ -400,7 +397,7 @@ def main():
 
         # Step 2: <q, a_std, t> -> LLM1 -> a'
         logger.warning("[INFO] Step2: <q, a_std, t> -> LLM1 -> a'")
-        process_llm1 = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
+        latest_vllm_process_id = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
         step2_file = f"{output_folder_path}/type3_step2_{os.path.basename(args.input_jsonl)}"
         step2_data = []
         step1_data_reloaded = list(read_jsonl(step1_file))
@@ -416,7 +413,7 @@ def main():
                     save_partial_results(step2_file, step2_data, append=True)
 
         save_partial_results(step2_file, step2_data, append=True)
-        stop_vllm_server(process_llm1)
+        # stop_vllm_server(process_llm1)
         
         # This is the final step to process the jsonl file
         process_jsonl(step2_file, args.output_jsonl, args.wrong_jsonl, args.dataset_type)
@@ -428,6 +425,10 @@ def main():
             logger.warning(f"[WARNING] The output file {args.output_jsonl} does not exist, please run the script without bypass_init to generate the output file")
         else:
             logger.warning(f"[GOOD] The output file {args.output_jsonl} already exist. Can run the script without bypass_init to regenerate the output file")
+            
+            
+        logger.warning(f'[INFO] start vllm server with {args.gpu} gpus')
+        latest_vllm_process_id = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
 
     ###############################################################################################################################################################
     """
@@ -435,51 +436,18 @@ def main():
     """   
     rerun_input_jsonl = args.wrong_jsonl
     
-    args.threads = args.threads//2
-    
-    total_gpus = args.gpu
-    processes = 2
-    
-    gpu_allocations = allocate_gpus(total_gpus, processes)
-    models_and_ports = [
-        (args.llm1_model, args.llm1_name, args.port1),
-        (args.llm2_model, args.llm2_name, args.port2)
-    ]
-
-    processes = []
-    
-    for i, (model_path, model_name, port) in enumerate(models_and_ports):
-        process = start_vllm_server_with_gpus(model_path, model_name, port, gpu_allocations[i])
-        processes.append(process)
-        
         
     logger.warning("[SECTION2] - Start the rerun data processing and generate the output jsonl file") 
     try:
         for i in range(20):
             # Step 1: <q, a_std> -> LLM2 -> t
             logger.warning("[INFO] Step1: <q, a_std> -> LLM2 -> t")
-            data_list = list(read_jsonl(rerun_input_jsonl))
-            step1_file = f"{output_folder_path}/tmp_rerun_type3_step1_{os.path.basename(args.input_jsonl)}"
-            step1_data = []
-            api_base_llm2 = f"http://localhost:{args.port2}"
-            
-            if os.path.exists(step1_file):
-                os.remove(step1_file)
-
-            with ThreadPoolExecutor(max_workers=args.threads) as executor:
-                futures = [executor.submit(process_record, api_base_llm2, args.llm2_name, args.dataset_type, 1, record) for record in data_list]
-                for i, future in enumerate(futures, start=1):
-                    step1_data.append(future.result())
-                    if i % 2000 == 0:
-                        save_partial_results(step1_file, step1_data, append=True)
-
-            save_partial_results(step1_file, step1_data, append=True)
+            step1_data_reloaded = list(read_jsonl(rerun_input_jsonl))
 
             # Step 2: <q, a_std, t> -> LLM1 -> a'
             logger.warning("[INFO] Step2: <q, a_std, t> -> LLM1 -> a'")
             step2_file = f"{output_folder_path}/tmp_rerun_type3_step2_{os.path.basename(args.input_jsonl)}"
             step2_data = []
-            step1_data_reloaded = list(read_jsonl(step1_file))
             api_base_llm1 = f"http://localhost:{args.port1}"
             
             if os.path.exists(step2_file):
@@ -502,14 +470,10 @@ def main():
     except Exception as e:
         logger.error(f"[ERROR] {str(e)}")
         
-        # kill all process
-        for process in processes:
-            stop_vllm_server(process)
+        stop_vllm_server(latest_vllm_process_id)
     
     
-    # kill all process
-    for process in processes:
-        stop_vllm_server(process)
+    stop_vllm_server(latest_vllm_process_id)
 
 if __name__ == "__main__":
     main()

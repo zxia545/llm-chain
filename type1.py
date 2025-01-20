@@ -22,17 +22,10 @@ def construct_type1_message(dataset_type, question):
             {"role": "user", "content": question}
         ]
     elif dataset_type == "MAmmoTH":
-        question_lower = question.lower()
-        if "program" in question_lower or "python" in question_lower:
-            return [
-                {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations."},
-                {"role": "user", "content": question}
-            ]
-        else:
-            return [
-                {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations. For every question, break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."},
-                {"role": "user", "content": question}
-            ]
+        return [
+            {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations. For every question, break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."},
+            {"role": "user", "content": question}
+        ]
     elif dataset_type == "WizardCoder":
         return [
             {"role": "system", "content": "You are an expert programmer and problem solver. Your task is to provide correct, efficient, readable, and well-structured code solutions to programming problems, adhering to best coding practices throughout."},

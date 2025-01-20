@@ -21,7 +21,7 @@ def construct_type1_message(dataset_type, question):
             {"role": "system", "content": "You are an AI assistant designed to provide accurate, clear, complete, and helpful answers to user instructions."},
             {"role": "user", "content": question}
         ]
-    elif dataset_type == "MAmmoTH":
+    elif dataset_type == "Magpie_Math_Instruct":
         return [
             {"role": "system", "content": "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations. For every question, break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."},
             {"role": "user", "content": question}
@@ -36,7 +36,7 @@ def construct_type1_message(dataset_type, question):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset_type", type=str, required=True, choices=["Infinity-Instruct", "MAmmoTH", "WizardCoder"],
+    parser.add_argument("--dataset_type", type=str, required=True, choices=["Infinity-Instruct", "Magpie_Math_Instruct", "WizardCoder"],
                         help="Type of dataset being processed.")
     parser.add_argument("--model", type=str, required=True, help="Path or name of the model for vLLM.")
     parser.add_argument("--model_name", type=str, required=True, help="Name of the model for vLLM.")

@@ -17,7 +17,7 @@ logger.warning("Starting the script...")
 def process_jsonl(input_file, output_file, wrong_file, dataset_type):
     cutoff_keywords = {
         "Infinity-Instruct": ["Final_Answer", "Final Answer", "Final_Solution", "Final Solution"],
-        "MAmmoTH": ["Final_Solution", "Final Solution", "Final_Answer", "Final Answer"],
+        "Magpie_Math_Instruct": ["Final_Solution", "Final Solution", "Final_Answer", "Final Answer"],
         "WizardCoder": ["Refactored_Code", "Refactored Code"]
     }
 
@@ -208,7 +208,7 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
                 }
             ]
 
-    elif dataset_type == "MAmmoTH":
+    elif dataset_type == "Magpie_Math_Instruct":
         # ------------------ Step 1 ------------------
         if step == 1:
             return [
@@ -345,7 +345,7 @@ def refine_list(data_list, jsonl_path):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset_type", type=str, required=True, choices=["Infinity-Instruct", "MAmmoTH", "WizardCoder"], help="Type of dataset being processed.")
+    parser.add_argument("--dataset_type", type=str, required=True, choices=["Infinity-Instruct", "Magpie_Math_Instruct", "WizardCoder"], help="Type of dataset being processed.")
     parser.add_argument("--input_jsonl", type=str, required=True, help="Original Q input JSONL.")
     parser.add_argument("--output_jsonl", type=str, required=True, help="Final output will be like 'cut_type2_step3_xxx.jsonl'")
     parser.add_argument("--output_folder_path", type=str, required=True, help="Folder name for the output.")

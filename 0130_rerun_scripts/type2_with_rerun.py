@@ -1,17 +1,18 @@
 import argparse
 import os
-from concurrent.futures import ThreadPoolExecutor
 from utils import read_jsonl, write_jsonl, start_vllm_server, stop_vllm_server, chat_completion, start_vllm_server_with_gpus, allocate_gpus
+from concurrent.futures import ThreadPoolExecutor
+import time 
 import logging
-import time
 import re
 
-logging.basicConfig(level=logging.WARNING, filename=f'type3_with_self_rerun_{time.strftime("%d_%H_%M_%S")}.log', filemode='a',
+logging.basicConfig(level=logging.WARNING, filename=f'type2_with_self_rerun_{time.strftime("%d_%H_%M_%S")}.log', filemode='a',
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 logger.warning("Starting the script...")
 
+# This file require user save the input name in the folder in rerun_cut_type2_step3_xxx.jsonl it will 
 
 def process_jsonl(input_file, output_file, wrong_file, dataset_type):
     cutoff_keywords = {
@@ -78,7 +79,7 @@ def process_jsonl(input_file, output_file, wrong_file, dataset_type):
             wrong_data.append({
                 "idx": idx,
                 "q": question,
-                "a_std": record.get("a_std", ""),
+                "a": record.get("a", ""),
                 "t": record.get("t", ""),
             })
         
@@ -113,57 +114,89 @@ def process_jsonl(input_file, output_file, wrong_file, dataset_type):
     
     return fail_count
 
-def construct_messages(dataset_type, step, question=None, std_answer=None, doubts=None):
+
+
+def construct_messages(dataset_type, step, question=None, answer=None, doubts=None):
     """
     Construct role-based messages for LLM interactions based on dataset type and step.
-    System prompts are tailored to encourage deep critical thinking and probing doubt.
+    The prompts are tailored to improve quality by reinforcing focus, structure, and depth,
+    encouraging thoughtful doubts and meaningful improvements.
     """
-
+    # if dataset_type == "Infinity-Instruct":
+    #     if step == 1:
+    #         return [
+    #             {"role": "system", "content": "You are an AI assistant designed to provide accurate, clear, complete, and helpful answers to user instructions."},
+    #             {"role": "user", "content": question}
+    #         ]
 
 
     if dataset_type == "Infinity-Instruct":
-        # --------------------------- Step 1 ---------------------------
+        # ------------------ Step 1 ------------------
         if step == 1:
             return [
                 {
                     "role": "system",
-                    "content": (
-                        "You are an AI assistant. You will read the question and a correct and high-quality answer. "
-                        "If there is anything in the answer you find unclear, incomplete, or confusing, ask specific questions "
-                        "to better understand those parts.\n"
-                    )
+                    "content": "You are an AI assistant designed to provide accurate, clear, complete, and helpful answers to user instructions."
                 },
                 {
                     "role": "user",
-                    "content": (
-                        f"Question: {question}\n"
-                        f"Here is the answer:\n{std_answer}\n\n"
-                        "Please list any questions you have."
-                    )
+                    "content": question
                 }
             ]
-
-        # --------------------------- Step 2 ---------------------------
+        # ------------------ Step 2 ------------------
         elif step == 2:
             return [
                 {
                     "role": "system",
                     "content": (
-                        "You are an AI assistant. You are tasked with rewriting a correct and high-quality answer based on the feedback provided. "
-                        "Refine or expand the original answer to address these questions clearly and effectively.\n\n"
-
-                        "Importantly, you MUST ensure your final answer still thoroughly addresses the original question while incorporating the new feedback.\n\n"
-
-                        "Additionally, you MUST follow the exact output format requested by the user. "
-                        "Do not add extra sections, do not change section titles, and do not omit any required sections."
+                        "You are an AI assistant. You will read the question and an answer provided by another AI assistant. "
+                        "If there is anything in the answer you find unclear, incomplete, or confusing, ask specific questions "
+                        "to better understand or improve those parts."
                     )
                 },
                 {
                     "role": "user",
                     "content": (
                         f"Question: {question}\n"
-                        f"Previous Answer (correct and high-quality): {std_answer}\n"
-                        f"Feedback: {doubts}\n\n"
+                        f"Here is the answer:\n{answer}\n\n"
+                        # "Please list specific and relevant questions about any details, reasoning, or unclear parts of the answer."
+                        "Please list any questions you have."
+                    )
+                }
+            ]
+
+        # ------------------ Step 3 ------------------
+        elif step == 3:
+            return [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an AI assistant. You will read the question and an answer provided by another AI assistant. "
+                        "If there is anything in the answer you find unclear, incomplete, or confusing, ask specific questions "
+                        "to better understand or improve those parts."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": question
+                },
+                {
+                    "role": "assistant",
+                    "content": answer
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"You are tasked with improving an answer based on the questions provided. "
+                        "Update and refine the original answer to address these questions clearly and effectively.\n\n"
+
+                        "Importantly, you MUST ensure your final answer still thoroughly addresses the original question while incorporating the new feedback.\n\n"
+
+                        f"Question: {question}\nPrevious Answer: {answer}\nFeedback: {doubts}"
+
+                        "Additionally, you MUST follow the exact output format requested below: "
+                        "Do not add extra sections, do not change section titles, and do not omit any required sections."
+
                         "Please rewrite the answer accordingly.\n\n"
                         "Output Format (strictly follow):\n"
                         "Addressing Feedback:\n"
@@ -175,140 +208,126 @@ def construct_messages(dataset_type, step, question=None, std_answer=None, doubt
                 }
             ]
 
-
-
-
     elif dataset_type == "Magpie_Math_Instruct":
-        # --------------------------- Step 1 ---------------------------
+        # ------------------ Step 1 ------------------
         if step == 1:
             return [
                 {
                     "role": "system",
                     "content": (
-                        "You are an AI assistant. You will read a solution to the following math problem. "
-                        "If any step in the solution is unclear, lacks justification, or appears incomplete, ask specific questions about those parts."
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"Math Problem: {question}\n"
-                        f"Here is the solution:\n{std_answer}\n\n"
-                        "List at most 3 specific questions about this solution."
-                    )
-                }
-            ]
-
-
-
-
-        # --------------------------- Step 2 ---------------------------
-        elif step == 2:
-            return [
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a mathematician and educator. You are tasked with answer the doubt for a math solution. "
+                        "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations. "
                         "Break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."
                     )
                 },
                 {
                     "role": "user",
+                    "content": question
+                }
+            ]
+
+
+        elif step == 2:
+
+
+            return [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an AI assistant. You will read the math problem and a solution provided by another AI assistant. "
+                        "Ask specific questions about any steps or justifications that are unclear, incomplete, or appear incorrect."
+                    )
+                },
+                {
+                    "role": "user",
                     "content": (
                         f"Math Problem: {question}\n"
-                        f"Solution: {std_answer}\n\n\n"
-                        f"Doubts for solution: {doubts}\n\n"
-                        "Please answer the doubts.\n\n"
-                
+                        f"Here is the solution:\n{answer}\n\n"
+                        "Please list specific questions about this solution."
                     )
                 }
             ]
-
-
-
-
-
-    elif dataset_type == "WizardCoder":
-        # --------------------------- Step 1 ---------------------------
-        if step == 1:
+            
+        elif step == 3:
             return [
                 {
                     "role": "system",
                     "content": (
-                        "You are an AI assistant. You will read a correct and high-quality code solution to the following programming problem. "
-                        "If there is any part of the solution or its reasoning you find unclear or confusing, ask specific questions to clarify those parts."
+                        "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations. "
+                        "Break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."
                     )
                 },
                 {
                     "role": "user",
-                    "content": (
-                        f"Programming Problem: {question}\n"
-                        f"Here is the code solution (correct and high-quality):\n{std_answer}\n\n"
-                        "Please list your questions about any unclear logic, implementation detail, or part of the solution you do not fully understand."
-                    )
-                }
-            ]
-
-
- 
-        # --------------------------- Step 2 ---------------------------
-        elif step == 2:
-            return [
+                    "content": question
+                },
                 {
-                    "role": "system",
-                    "content": (
-                        "You are an expert programmer. You are tasked with rewriting a correct and high-quality code solution based on the feedback provided. "
-                        "Refactor, clarify, or enhance the code to address these questions, ensuring it is correct, efficient, readable, and adheres to best practices.\n\n"
-
-                        "Crucially, your final solution must still address the original programming problem thoroughly while incorporating the feedback.\n\n"
-
-                        "Additionally, you MUST follow the exact output format requested by the user. "
-                        "Do not add extra sections, do not change section titles, and do not omit any required sections."
-                    )
+                    "role": "assistant",
+                    "content": answer
                 },
                 {
                     "role": "user",
                     "content": (
-                        f"Programming Problem: {question}\n"
-                        f"Previous Code Solution (correct and high-quality): {std_answer}\n"
+                        # "Refine the given math solution based on the provided feedback. Ensure accuracy, logical reasoning, and clear explanations while addressing all feedback. "
+                        # "The updated solution must fully answer the original question.\n\n"
+                        # "Refine the given math solution based on the provided feedback. Ensure accuracy, logical reasoning, and clear explanations while while addressing feedback. "
+                        # "Ignore feedback that is irrelevant, unreasonable. "
+                        # "Always prioritize answering the original question clearly and logical."
+                        # "Refine the given math solution based on the provided feedback. Ensure accuracy, logical reasoning, and clear explanations while addressing feedback. "
+                        # "Ignore feedback that is irrelevant, unreasonable. "
+                        # "Always prioritize answering the original question clearly and logical."
+
+                        # "Refine the given math solution based on the feedback. Ensure the solution is accurate, logical, and clearly explained. "
+                        # "Ignore feedback that is irrelevant, unreasonable. "
+                        # "Always prioritize answering the original question clearly, logical and avoid redundant explanations."
+                        # # "The updated solution must fully answer the original question.\n\n"
+                        # "Follow the exact output format without adding, changing, or omitting sections."
+
+
+                        "Refine the given math solution based on the feedback. Ensure the solution is accurate, logical, and clearly explained. "
+                        "Ignore feedback that is irrelevant, unreasonable. "
+                        # "Always prioritize answering the original question clearly, logical and avoid redundant explanations."
+                        "Always prioritize answering the math problem clearly, logical, and avoid explanations unrelated to the math problem."
+                        "Follow the exact output format without adding, changing, or omitting sections."
+
+                        
                         f"Feedback: {doubts}\n\n"
-                        "Please rewrite the code solution accordingly.\n\n"
-                        "Output Format (strictly follow):\n"
-                        "Addressing_Feedback:\n"
+                        "Rewrite the math solution accordingly.\n\n"
+                        "Strictly follow this answer format (without adding, changing, or omitting sections):\n"
+                        "Addressing Feedback:\n"
                         "1. ...\n"
                         "2. ...\n\n"
-                        "Refactored_Code:\n"
-                        "<<<Your final improved code solution here>>>\n"
+                        # "Final Solution (The solution should fully answer the original question, balancing clarity and conciseness):\n"
+                        # "Final Solution: (The solution should fully answer the math problem step by step while avoiding explanations unrelated to the math problem.):\n"
+                        "Final Solution: (Provide a clear, step-by-step solution to the math problem and avoiding explanations unrelated to the math problem.):\n"
+                        "...\n"
                     )
                 }
             ]
-    else:
-        raise ValueError(f"Unsupported dataset type: {dataset_type}")
-
-
-
-
+ 
 def save_partial_results(file_path, data, append=False):
     if data:
         write_jsonl(file_path, data, append=append)
         data.clear()
-
-def process_record(api_base, llm_model, dataset_type, step, record):
-    question = record.get("input", record.get("q"))
-    std_answer = record.get("output", record.get("a_std"))
+        
+        
+def process_record(api_base, llm_model_name, dataset_type, step, record):
+    question = record.get("q", record.get("input"))
+    answer = record.get("a", None)
     doubts = record.get("t", None)
     idx = record.get("idx", None)
 
     try:
-        messages = construct_messages(dataset_type, step, question=question, std_answer=std_answer, doubts=doubts)
-        response = chat_completion(api_base, llm_model, messages, max_tokens=2048, temperature=0.7)
+        messages = construct_messages(dataset_type, step, question=question, answer=answer, doubts=doubts)
+        response = chat_completion(api_base, llm_model_name, messages, max_tokens=2048, temperature=0.7)
     except Exception as e:
         response = f"[LLM Error] {str(e)}"
         
     if step == 1:
-        result = {"idx": idx, "q": question, "a_std": std_answer, "t": response}
+        result = {"idx": idx, "q": question, "a": response, "t": None}
     elif step == 2:
-        result = {"idx": idx, "q": question, "a_std": std_answer, "t": doubts, "response": response}
+        result = {"idx": idx, "q": question, "a": answer, "t": response}
+    elif step == 3:
+        result = {"idx": idx, "q": question, "a": answer, "t": doubts, "response": response}
     return result
 
 def refine_list(data_list, jsonl_path):
@@ -323,13 +342,14 @@ def refine_list(data_list, jsonl_path):
         logger.warning(f"[INFO] No existing results found. Processing all records.")
     return data_list
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset_type", type=str, required=True, choices=["Infinity-Instruct", "Magpie_Math_Instruct", "WizardCoder"], help="Type of dataset being processed.")
     parser.add_argument("--input_jsonl", type=str, required=True, help="Original Q input JSONL.")
     parser.add_argument("--output_jsonl", type=str, required=True, help="Final output will be like 'cut_type2_step3_xxx.jsonl'")
-    parser.add_argument("--wrong_jsonl", type=str, required=True, help="Wrong output will be like 'rerun_cut_type2_step3_xxx.jsonl'")
     parser.add_argument("--output_folder_path", type=str, required=True, help="Folder name for the output.")
+    parser.add_argument("--wrong_jsonl", type=str, required=True, help="Wrong output will be like 'rerun_cut_type2_step3_xxx.jsonl'")
     parser.add_argument("--llm1_model", type=str, required=True, help="Model path for LLM1.")
     parser.add_argument("--llm2_model", type=str, required=True, help="Model path for LLM2.")
     parser.add_argument("--llm1_name", type=str, default="LLM1", help="Name for LLM1.")
@@ -340,8 +360,6 @@ def main():
     parser.add_argument("--threads", type=int, default=8, help="Number of threads for concurrent processing.")
     parser.add_argument("--bypass_init", type=bool, default=False, help="Bypass the initial process")
     args = parser.parse_args()
-
-
 
     output_folder_path = args.output_folder_path
     
@@ -354,8 +372,8 @@ def main():
         
     if not args.wrong_jsonl.startswith("/"):
         args.wrong_jsonl = f"{args.output_folder_path}/{args.wrong_jsonl}"
-        
-    # check if output file exists
+    
+    # check does output file exist
     is_output_file_exists = os.path.exists(args.output_jsonl)
     
     
@@ -365,105 +383,123 @@ def main():
     """
     ###############################################################################################################################################################
     if not args.bypass_init and not is_output_file_exists:
-        logger.warning("[INFO] Step1: <q, a_std> -> LLM2 -> t")
-        process_llm2 = start_vllm_server(args.llm2_model, args.llm2_name, args.port2, args.gpu)
+        # Step 1: q -> LLM1 -> a
+        logger.warning("[SECTION1] - Start the init data processing and generate the output jsonl file")
+        logger.warning("[INFO] Step1: q -> LLM1 -> a")
+        process_llm1 = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
         data_list = list(read_jsonl(args.input_jsonl))
-        step1_file = f"{output_folder_path}/type3_step1_{os.path.basename(args.input_jsonl)}"
-        step1_data = []
-        api_base_llm2 = f"http://localhost:{args.port2}"
         
-        # Refine data list based on existing results
+        step1_file = f"{output_folder_path}/type2_step1_{os.path.basename(args.input_jsonl)}"
+        step1_data = []
+        api_base_llm1 = f"http://localhost:{args.port1}"
+        
+        # Load existing output JSONL if it exists
         data_list = refine_list(data_list, step1_file)
 
         with ThreadPoolExecutor(max_workers=args.threads) as executor:
-            futures = [executor.submit(process_record, api_base_llm2, args.llm2_name, args.dataset_type, 1, record) for record in data_list]
+            futures = [executor.submit(process_record, api_base_llm1, args.llm1_name, args.dataset_type, 1, record) for record in data_list]
             for i, future in enumerate(futures, start=1):
                 step1_data.append(future.result())
                 if i % 2000 == 0:
                     save_partial_results(step1_file, step1_data, append=True)
 
         save_partial_results(step1_file, step1_data, append=True)
-        stop_vllm_server(process_llm2)
-
-        # Step 2: <q, a_std, t> -> LLM1 -> a'
-        logger.warning("[INFO] Step2: <q, a_std, t> -> LLM1 -> a'")
-        latest_vllm_process_id = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
-        step2_file = f"{output_folder_path}/type3_step2_{os.path.basename(args.input_jsonl)}"
+        stop_vllm_server(process_llm1)
+        # Step 2: <q, a> -> LLM2 -> t
+        logger.warning("[INFO] Step2: <q, a> -> LLM2 -> t")
+        process_llm2 = start_vllm_server(args.llm2_model, args.llm2_name, args.port2, args.gpu)
+        step2_file = f"{output_folder_path}/type2_step2_{os.path.basename(args.input_jsonl)}"
         step2_data = []
         step1_data_reloaded = list(read_jsonl(step1_file))
-        api_base_llm1 = f"http://localhost:{args.port1}"
+        api_base_llm2 = f"http://localhost:{args.port2}"
         
-        # Refine data list based on existing results
+        # Load existing output JSONL if it exists
         step1_data_reloaded = refine_list(step1_data_reloaded, step2_file)
         with ThreadPoolExecutor(max_workers=args.threads) as executor:
-            futures = [executor.submit(process_record, api_base_llm1, args.llm1_name, args.dataset_type, 2, record) for record in step1_data_reloaded]
+            futures = [executor.submit(process_record, api_base_llm2, args.llm2_name, args.dataset_type, 2, record) for record in step1_data_reloaded]
             for i, future in enumerate(futures, start=1):
                 step2_data.append(future.result())
                 if i % 2000 == 0:
                     save_partial_results(step2_file, step2_data, append=True)
 
         save_partial_results(step2_file, step2_data, append=True)
-        # stop_vllm_server(process_llm1)
+        stop_vllm_server(process_llm2)
+
+        # Step 3: <q, a, t> -> LLM1 -> a'
+        logger.warning("[INFO] Step3: <q, a, t> -> LLM1 -> a'")
+        latest_vllm_process_id = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
+        step3_file = f"{output_folder_path}/type2_step3_{os.path.basename(args.input_jsonl)}"
+        step3_data = []
+        step2_data_reloaded = list(read_jsonl(step2_file))
+
+        # Load existing output JSONL if it exists
+        step2_data_reloaded = refine_list(step2_data_reloaded, step3_file)
+        with ThreadPoolExecutor(max_workers=args.threads) as executor:
+            futures = [executor.submit(process_record, api_base_llm1, args.llm1_name, args.dataset_type, 3, record) for record in step2_data_reloaded]
+            for i, future in enumerate(futures, start=1):
+                step3_data.append(future.result())
+                if i % 2000 == 0:
+                    save_partial_results(step3_file, step3_data, append=True)
+
+        save_partial_results(step3_file, step3_data, append=True)
+        # stop_vllm_server(process_llm1_step3)
         
         # This is the final step to process the jsonl file
-        process_jsonl(step2_file, args.output_jsonl, args.wrong_jsonl, args.dataset_type)
-        
-        
+        process_jsonl(step3_file, args.output_jsonl, args.wrong_jsonl, args.dataset_type)
     else:
         logger.warning(f"[SECTION1] - Bypass the initial data generation, directly load {args.wrong_jsonl} to rerun the process")
         if not is_output_file_exists:
             logger.warning(f"[WARNING] The output file {args.output_jsonl} does not exist, please run the script without bypass_init to generate the output file")
         else:
             logger.warning(f"[GOOD] The output file {args.output_jsonl} already exist. Can run the script without bypass_init to regenerate the output file")
-            
-            
+        
         logger.warning(f'[INFO] start vllm server with {args.gpu} gpus')
         latest_vllm_process_id = start_vllm_server(args.llm1_model, args.llm1_name, args.port1, args.gpu)
-
     ###############################################################################################################################################################
     """
     !!! This is rerun the output section !!!
-    """   
+    """
     rerun_input_jsonl = args.wrong_jsonl
     
-        
-    logger.warning("[SECTION2] - Start the rerun data processing and generate the output jsonl file") 
+    
+    logger.warning("[SECTION2] - Start the rerun data processing and generate the output jsonl file")
     try:
         for i in range(20):
-            # Step 1: <q, a_std> -> LLM2 -> t
-            logger.warning("[INFO] Step1: <q, a_std> -> LLM2 -> t")
-            step1_data_reloaded = list(read_jsonl(rerun_input_jsonl))
+            # NOTE: we load the rerun input jsonl
+            step2_data_reloaded = list(read_jsonl(rerun_input_jsonl))
+            # Step 3: <q, a, t> -> LLM1 -> a'
+            logger.warning("[INFO] Step3: <q, a, t> -> LLM1 -> a'")
+            step3_file = f"{output_folder_path}/tmp_rerun_type2_step3_{os.path.basename(args.input_jsonl)}"
+            step3_data = []
 
-            # Step 2: <q, a_std, t> -> LLM1 -> a'
-            logger.warning("[INFO] Step2: <q, a_std, t> -> LLM1 -> a'")
-            step2_file = f"{output_folder_path}/tmp_rerun_type3_step2_{os.path.basename(args.input_jsonl)}"
-            step2_data = []
-            api_base_llm1 = f"http://localhost:{args.port1}"
-            
-            if os.path.exists(step2_file):
-                os.remove(step2_file)
+            if os.path.exists(step3_file):
+                os.remove(step3_file)
             
             with ThreadPoolExecutor(max_workers=args.threads) as executor:
-                futures = [executor.submit(process_record, api_base_llm1, args.llm1_name, args.dataset_type, 2, record) for record in step1_data_reloaded]
+                futures = [executor.submit(process_record, api_base_llm1, args.llm1_name, args.dataset_type, 3, record) for record in step2_data_reloaded]
                 for i, future in enumerate(futures, start=1):
-                    step2_data.append(future.result())
+                    step3_data.append(future.result())
                     if i % 2000 == 0:
-                        save_partial_results(step2_file, step2_data, append=True)
+                        save_partial_results(step3_file, step3_data, append=True)
 
-            save_partial_results(step2_file, step2_data, append=True)
-            failed_count = process_jsonl(step2_file, args.output_jsonl, args.wrong_jsonl, args.dataset_type)
+            save_partial_results(step3_file, step3_data, append=True)
+
+            # The good result will be save to the output_jsonl  and the raw file
+            # The bad result will be save to the wrong_jsonl and then rerun again
+            failed_count = process_jsonl(step3_file, args.output_jsonl, args.wrong_jsonl, args.dataset_type)
             if failed_count > 0:
                 logger.warning(f"[INFO] Rerunning Step1 as still {failed_count} failed to cut.")
             else:
-                logger.warning("[INFO] Type3 pipeline complete.")
+                logger.warning("[INFO] Type2 pipeline complete.")
                 break
     except Exception as e:
         logger.error(f"[ERROR] {str(e)}")
-        
+ 
         stop_vllm_server(latest_vllm_process_id)
     
-    
     stop_vllm_server(latest_vllm_process_id)
+
+    
 
 if __name__ == "__main__":
     main()

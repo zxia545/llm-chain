@@ -185,7 +185,7 @@ def construct_messages(dataset_type, step, question=None, std_answer=None, doubt
                 {
                     "role": "system",
                     "content": (
-                        "You are an AI assistant. You will read a solution to the following math problem. "
+                        "You are an AI assistant. You will read a correct and high-quality solution to the following math problem. "
                         "If any step in the solution is unclear, lacks justification, or appears incomplete, ask specific questions about those parts."
                     )
                 },
@@ -193,8 +193,8 @@ def construct_messages(dataset_type, step, question=None, std_answer=None, doubt
                     "role": "user",
                     "content": (
                         f"Math Problem: {question}\n"
-                        f"Here is the solution:\n{std_answer}\n\n"
-                        "List at most 3 specific questions about this solution."
+                        f"Here is the solution (correct and high-quality):\n{std_answer}\n\n"
+                        "Please list your questions."
                     )
                 }
             ]
@@ -208,18 +208,28 @@ def construct_messages(dataset_type, step, question=None, std_answer=None, doubt
                 {
                     "role": "system",
                     "content": (
-                        "You are a mathematician and educator. You are tasked with answer the doubt for a math solution. "
-                        "Break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."
+                        "You are a mathematician and educator. You are tasked with rewriting a correct and high-quality math solution based on the feedback provided. "
+                        "Refine and enhance the original solution to address these questions, ensuring accuracy, logical reasoning, and clear explanations.\n\n"
+
+                        "Also, ensure the final solution still thoroughly addresses the original math problem while incorporating the feedback.\n\n"
+
+                        "Additionally, you MUST follow the exact output format requested by the user. "
+                        "Do not add extra sections, do not change section titles, and do not omit any required sections."
                     )
                 },
                 {
                     "role": "user",
                     "content": (
                         f"Math Problem: {question}\n"
-                        f"Solution: {std_answer}\n\n\n"
-                        f"Doubts for solution: {doubts}\n\n"
-                        "Please answer the doubts.\n\n"
-                
+                        f"Previous Solution (correct and high-quality): {std_answer}\n"
+                        f"Feedback: {doubts}\n\n"
+                        "Please rewrite the solution accordingly.\n\n"
+                        "Output Format (strictly follow):\n"
+                        "Addressing Feedback:\n"
+                        "1. ...\n"
+                        "2. ...\n\n"
+                        "Final Solution:\n"
+                        "<<<Your final refined solution here>>>\n"
                     )
                 }
             ]

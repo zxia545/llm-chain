@@ -227,8 +227,6 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
 
 
         elif step == 2:
-
-
             return [
                 {
                     "role": "system",
@@ -242,7 +240,7 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
                     "content": (
                         f"Math Problem: {question}\n"
                         f"Here is the solution:\n{answer}\n\n"
-                        "Please list specific questions about this solution."
+                        "List at most 3 specific questions about this solution."
                     )
                 }
             ]
@@ -252,7 +250,7 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
                 {
                     "role": "system",
                     "content": (
-                        "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations. "
+                        "You are a mathematician and educator. Solve the following doubt for the math problem with accurate, complete, and clear explanations. "
                         "Break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."
                     )
                 },
@@ -267,39 +265,7 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
                 {
                     "role": "user",
                     "content": (
-                        # "Refine the given math solution based on the provided feedback. Ensure accuracy, logical reasoning, and clear explanations while addressing all feedback. "
-                        # "The updated solution must fully answer the original question.\n\n"
-                        # "Refine the given math solution based on the provided feedback. Ensure accuracy, logical reasoning, and clear explanations while while addressing feedback. "
-                        # "Ignore feedback that is irrelevant, unreasonable. "
-                        # "Always prioritize answering the original question clearly and logical."
-                        # "Refine the given math solution based on the provided feedback. Ensure accuracy, logical reasoning, and clear explanations while addressing feedback. "
-                        # "Ignore feedback that is irrelevant, unreasonable. "
-                        # "Always prioritize answering the original question clearly and logical."
-
-                        # "Refine the given math solution based on the feedback. Ensure the solution is accurate, logical, and clearly explained. "
-                        # "Ignore feedback that is irrelevant, unreasonable. "
-                        # "Always prioritize answering the original question clearly, logical and avoid redundant explanations."
-                        # # "The updated solution must fully answer the original question.\n\n"
-                        # "Follow the exact output format without adding, changing, or omitting sections."
-
-
-                        "Refine the given math solution based on the feedback. Ensure the solution is accurate, logical, and clearly explained. "
-                        "Ignore feedback that is irrelevant, unreasonable. "
-                        # "Always prioritize answering the original question clearly, logical and avoid redundant explanations."
-                        "Always prioritize answering the math problem clearly, logical, and avoid explanations unrelated to the math problem."
-                        "Follow the exact output format without adding, changing, or omitting sections."
-
-                        
-                        f"Feedback: {doubts}\n\n"
-                        "Rewrite the math solution accordingly.\n\n"
-                        "Strictly follow this answer format (without adding, changing, or omitting sections):\n"
-                        "Addressing Feedback:\n"
-                        "1. ...\n"
-                        "2. ...\n\n"
-                        # "Final Solution (The solution should fully answer the original question, balancing clarity and conciseness):\n"
-                        # "Final Solution: (The solution should fully answer the math problem step by step while avoiding explanations unrelated to the math problem.):\n"
-                        "Final Solution: (Provide a clear, step-by-step solution to the math problem and avoiding explanations unrelated to the math problem.):\n"
-                        "...\n"
+                        f'{doubts}'
                     )
                 }
             ]

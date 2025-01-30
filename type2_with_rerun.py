@@ -130,85 +130,7 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
     #         ]
 
 
-    if dataset_type == "Infinity-Instruct":
-        # ------------------ Step 1 ------------------
-        if step == 1:
-            return [
-                {
-                    "role": "system",
-                    "content": "You are an AI assistant designed to provide accurate, clear, complete, and helpful answers to user instructions."
-                },
-                {
-                    "role": "user",
-                    "content": question
-                }
-            ]
-        # ------------------ Step 2 ------------------
-        elif step == 2:
-            return [
-                {
-                    "role": "system",
-                    "content": (
-                        "You are an AI assistant. You will read the question and an answer provided by another AI assistant. "
-                        "If there is anything in the answer you find unclear, incomplete, or confusing, ask specific questions "
-                        "to better understand or improve those parts."
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"Question: {question}\n"
-                        f"Here is the answer:\n{answer}\n\n"
-                        # "Please list specific and relevant questions about any details, reasoning, or unclear parts of the answer."
-                        "Please list any questions you have."
-                    )
-                }
-            ]
-
-        # ------------------ Step 3 ------------------
-        elif step == 3:
-            return [
-                {
-                    "role": "system",
-                    "content": (
-                        "You are an AI assistant. You will read the question and an answer provided by another AI assistant. "
-                        "If there is anything in the answer you find unclear, incomplete, or confusing, ask specific questions "
-                        "to better understand or improve those parts."
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": question
-                },
-                {
-                    "role": "assistant",
-                    "content": answer
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"You are tasked with improving an answer based on the questions provided. "
-                        "Update and refine the original answer to address these questions clearly and effectively.\n\n"
-
-                        "Importantly, you MUST ensure your final answer still thoroughly addresses the original question while incorporating the new feedback.\n\n"
-
-                        f"Question: {question}\nPrevious Answer: {answer}\nFeedback: {doubts}"
-
-                        "Additionally, you MUST follow the exact output format requested below: "
-                        "Do not add extra sections, do not change section titles, and do not omit any required sections."
-
-                        "Please rewrite the answer accordingly.\n\n"
-                        "Output Format (strictly follow):\n"
-                        "Addressing Feedback:\n"
-                        "1. ...\n"
-                        "2. ...\n\n"
-                        "Final Answer:\n"
-                        "<<<Your final updated answer here>>>\n"
-                    )
-                }
-            ]
-
-    elif dataset_type == "Magpie_Math_Instruct":
+    if dataset_type == "Magpie_Math_Instruct":
         # ------------------ Step 1 ------------------
         if step == 1:
             return [
@@ -269,6 +191,9 @@ def construct_messages(dataset_type, step, question=None, answer=None, doubts=No
                     )
                 }
             ]
+    
+    else:
+        raise ValueError(f"Unsupported dataset type: {dataset_type}")
  
 def save_partial_results(file_path, data, append=False):
     if data:

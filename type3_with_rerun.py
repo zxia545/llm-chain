@@ -119,66 +119,7 @@ def construct_messages(dataset_type, step, question=None, std_answer=None, doubt
     System prompts are tailored to encourage deep critical thinking and probing doubt.
     """
 
-
-
-    if dataset_type == "Infinity-Instruct":
-        # --------------------------- Step 1 ---------------------------
-        if step == 1:
-            return [
-                {
-                    "role": "system",
-                    "content": (
-                        "You are an AI assistant. You will read the question and a correct and high-quality answer. "
-                        "If there is anything in the answer you find unclear, incomplete, or confusing, ask specific questions "
-                        "to better understand those parts.\n"
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"Question: {question}\n"
-                        f"Here is the answer:\n{std_answer}\n\n"
-                        "Please list any questions you have."
-                    )
-                }
-            ]
-
-        # --------------------------- Step 2 ---------------------------
-        elif step == 2:
-            return [
-                {
-                    "role": "system",
-                    "content": (
-                        "You are an AI assistant. You are tasked with rewriting a correct and high-quality answer based on the feedback provided. "
-                        "Refine or expand the original answer to address these questions clearly and effectively.\n\n"
-
-                        "Importantly, you MUST ensure your final answer still thoroughly addresses the original question while incorporating the new feedback.\n\n"
-
-                        "Additionally, you MUST follow the exact output format requested by the user. "
-                        "Do not add extra sections, do not change section titles, and do not omit any required sections."
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"Question: {question}\n"
-                        f"Previous Answer (correct and high-quality): {std_answer}\n"
-                        f"Feedback: {doubts}\n\n"
-                        "Please rewrite the answer accordingly.\n\n"
-                        "Output Format (strictly follow):\n"
-                        "Addressing Feedback:\n"
-                        "1. ...\n"
-                        "2. ...\n\n"
-                        "Final Answer:\n"
-                        "<<<Your final updated answer here>>>\n"
-                    )
-                }
-            ]
-
-
-
-
-    elif dataset_type == "Magpie_Math_Instruct":
+    if dataset_type == "Magpie_Math_Instruct":
         # --------------------------- Step 1 ---------------------------
         if step == 1:
             return [
@@ -208,7 +149,7 @@ def construct_messages(dataset_type, step, question=None, std_answer=None, doubt
                 {
                     "role": "system",
                     "content": (
-                        "You are a mathematician and educator. You are tasked with answer the doubt for a math solution. "
+                        "You are a mathematician and educator. You are tasked with answering doubts about a math solution. "
                         "Break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."
                     )
                 },
@@ -217,9 +158,8 @@ def construct_messages(dataset_type, step, question=None, std_answer=None, doubt
                     "content": (
                         f"Math Problem: {question}\n"
                         f"Solution: {std_answer}\n\n\n"
-                        f"Doubts for solution: {doubts}\n\n"
-                        "Please answer the doubts.\n\n"
-                
+                        f"Doubts about the solution: {doubts}\n\n"
+                        "Please address the doubts.\n\n"
                     )
                 }
             ]
@@ -227,61 +167,6 @@ def construct_messages(dataset_type, step, question=None, std_answer=None, doubt
 
 
 
-
-    elif dataset_type == "WizardCoder":
-        # --------------------------- Step 1 ---------------------------
-        if step == 1:
-            return [
-                {
-                    "role": "system",
-                    "content": (
-                        "You are an AI assistant. You will read a correct and high-quality code solution to the following programming problem. "
-                        "If there is any part of the solution or its reasoning you find unclear or confusing, ask specific questions to clarify those parts."
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"Programming Problem: {question}\n"
-                        f"Here is the code solution (correct and high-quality):\n{std_answer}\n\n"
-                        "Please list your questions about any unclear logic, implementation detail, or part of the solution you do not fully understand."
-                    )
-                }
-            ]
-
-
- 
-        # --------------------------- Step 2 ---------------------------
-        elif step == 2:
-            return [
-                {
-                    "role": "system",
-                    "content": (
-                        "You are an expert programmer. You are tasked with rewriting a correct and high-quality code solution based on the feedback provided. "
-                        "Refactor, clarify, or enhance the code to address these questions, ensuring it is correct, efficient, readable, and adheres to best practices.\n\n"
-
-                        "Crucially, your final solution must still address the original programming problem thoroughly while incorporating the feedback.\n\n"
-
-                        "Additionally, you MUST follow the exact output format requested by the user. "
-                        "Do not add extra sections, do not change section titles, and do not omit any required sections."
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"Programming Problem: {question}\n"
-                        f"Previous Code Solution (correct and high-quality): {std_answer}\n"
-                        f"Feedback: {doubts}\n\n"
-                        "Please rewrite the code solution accordingly.\n\n"
-                        "Output Format (strictly follow):\n"
-                        "Addressing_Feedback:\n"
-                        "1. ...\n"
-                        "2. ...\n\n"
-                        "Refactored_Code:\n"
-                        "<<<Your final improved code solution here>>>\n"
-                    )
-                }
-            ]
     else:
         raise ValueError(f"Unsupported dataset type: {dataset_type}")
 

@@ -15,7 +15,6 @@ def get_training_data(input_file, output_file):
     llm_ignore_data = []
 
     for record in read_jsonl(input_file):
-        total_count += 1
         idx = record.get("idx")
         question = record.get("q", "")
         if "a_std" in record:

@@ -11,3 +11,6 @@ def main():
     args = parser.parse_args()
 
     get_training_data(args.input_file, args.output_file)
+    
+if __name__ == "__main__":
+    main()

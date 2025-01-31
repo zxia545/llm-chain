@@ -10,7 +10,7 @@ def main():
     parser.add_argument("-o", type=str, required=True)
     args = parser.parse_args()
 
-    get_training_data(args.input_file, args.output_file)
+    get_training_data(args.i, args.o)
     
 if __name__ == "__main__":
     main()

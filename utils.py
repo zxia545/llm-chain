@@ -9,6 +9,56 @@ from openai import OpenAI
 import json
 import os
 
+
+def get_training_data(input_file, output_file):
+    processed_data = []
+    llm_ignore_data = []
+
+    for record in read_jsonl(input_file):
+        total_count += 1
+        idx = record.get("idx")
+        question = record.get("q", "")
+        if "a_std" in record:
+            answer = record.get("a_std", "")
+        elif "a" in record:
+            answer = record.get("a", "")
+        doubts = record.get("t", "")
+        response = record.get("response", "")
+
+        if "[LLM Error]" in response:
+            llm_ignore_data.append(record)
+            continue
+        else:
+            final_input = (
+                "You are a mathematician and educator dedicated to resolving doubts about math solutions. "
+                "Provide clear, step-by-step explanations to logically address each doubt.\n\n"
+                f"Math Problem: {question}\n"
+                f"Solution: {answer}\n\n\n"
+                f"Doubts about the solution: {doubts}\n\n"
+                "Please address the doubts.\n\n"
+            )
+            
+            final_output = response
+            
+            processed_data.append(
+                {
+                    'idx': idx,
+                    'input': final_input,
+                    'output': final_output
+                }
+            )
+        
+    output_file_name = output_file.split("/")[-1]
+    path_to_output = "/".join(output_file.split("/")[:-1])
+
+    write_jsonl(output_file, processed_data, append=True)
+    print(f"[INFO] Processed data has been saved to {output_file}")
+    
+    llm_error_file_path = f"{path_to_output}/llm_error_{output_file_name}"
+    if len(llm_ignore_data) > 0:
+        write_jsonl(llm_error_file_path, llm_ignore_data, append=True)
+        print(f"[INFO] LLM Error data has been saved to {llm_error_file_path}")
+
 def filter_and_fix_file(file_path):
     """
     Reads a JSONL file, removes invalid lines, and overwrites the original file with only valid lines.

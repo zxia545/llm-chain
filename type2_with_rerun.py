@@ -1,6 +1,6 @@
 import argparse
 import os
-from utils import read_jsonl, write_jsonl, start_vllm_server, stop_vllm_server, chat_completion, start_vllm_server_with_gpus, allocate_gpus
+from utils import read_jsonl, write_jsonl, start_vllm_server, stop_vllm_server, chat_completion, start_vllm_server_with_gpus, allocate_gpus, get_training_data
 from concurrent.futures import ThreadPoolExecutor
 import time 
 import logging
@@ -12,55 +12,6 @@ logger = logging.getLogger(__name__)
 
 logger.warning("Starting the script...")
 
-# This file require user save the input name in the folder in rerun_cut_type2_step3_xxx.jsonl it will 
-
-def process_jsonl(input_file, output_file):
-    processed_data = []
-    llm_ignore_data = []
-
-    for record in read_jsonl(input_file):
-        idx = record.get("idx")
-        question = record.get("q", "")
-        if "a_std" in record:
-            answer = record.get("a_std", "")
-        elif "a" in record:
-            answer = record.get("a", "")
-        doubts = record.get("t", "")
-        response = record.get("response", "")
-
-        if "[LLM Error]" in response:
-            logger.warning(f'Index {idx} has LLM Error - It maybe too long that pass the max token limit')
-            llm_ignore_data.append(record)
-            continue
-        else:
-            final_input = (
-                "You are a mathematician and educator dedicated to resolving doubts about math solutions. "
-                "Provide clear, step-by-step explanations to logically address each doubt.\n\n"
-                f"Math Problem: {question}\n"
-                f"Solution: {answer}\n\n\n"
-                f"Doubts about the solution: {doubts}\n\n"
-                "Please address the doubts.\n\n"
-            )
-            
-            final_output = response
-            processed_data.append(
-                {
-                    'idx': idx,
-                    'input': final_input,
-                    'output': final_output
-                }
-            )
-        
-    output_file_name = output_file.split("/")[-1]
-    path_to_output = "/".join(output_file.split("/")[:-1])
-
-    write_jsonl(output_file, processed_data, append=True)
-    logger.warning(f"[INFO] Processed data has been saved to {output_file}")
-    
-    llm_error_file_path = f"{path_to_output}/llm_error_{output_file_name}"
-    if len(llm_ignore_data) > 0:
-        write_jsonl(llm_error_file_path, llm_ignore_data, append=True)
-        logger.warning(f"[INFO] LLM Error data has been saved to {llm_error_file_path}")
 
 
 def construct_messages(dataset_type, step, question=None, answer=None, doubts=None):
@@ -273,7 +224,7 @@ def main():
 
         save_partial_results(step3_file, step3_data, append=True)
         # This is the final step to process the jsonl file
-        process_jsonl(step3_file, args.output_jsonl)
+        get_training_data(step3_file, args.output_jsonl)
     else:
         logger.warning(f"[SECTION1] - Bypass the initial data generation")
         if not is_output_file_exists:

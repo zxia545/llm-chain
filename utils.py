@@ -28,6 +28,14 @@ def get_training_data(input_file, output_file):
             llm_ignore_data.append(record)
             continue
         else:
+            processed_data.append(
+                {
+                    'idx': idx,
+                    'input': question,
+                    'output': answer
+                }
+            )
+            
             final_input = (
                 "You are a mathematician and educator dedicated to resolving doubts about math solutions. "
                 "Provide clear, step-by-step explanations to logically address each doubt.\n\n"
@@ -38,7 +46,7 @@ def get_training_data(input_file, output_file):
             )
             
             final_output = response
-            
+                 
             processed_data.append(
                 {
                     'idx': idx,

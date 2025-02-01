@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 logger.warning("Starting the script...")
 
 
-def construct_messages(dataset_type, step, question=None, std_answer=None, doubts=None):
+def construct_messages(dataset_type, step, question=None, std_answer=None, confusion=None):
     """
     Construct role-based messages for LLM interactions based on dataset type and step.
     System prompts are tailored to encourage deep critical thinking and probing doubt.
@@ -26,8 +26,8 @@ def construct_messages(dataset_type, step, question=None, std_answer=None, doubt
                 {
                     "role": "system",
                     "content": (
-                        "You are an AI assistant. You will read a solution to the following math problem. "
-                        "If any step in the solution is unclear, ask specific questions about those parts."
+                        "You are an AI assistant. You will read a correct solution to the following math problem. "
+                        "If you have any questions or confusions about the solution, please ask specific questions regarding those parts."
                     )
                 },
                 {
@@ -49,8 +49,8 @@ def construct_messages(dataset_type, step, question=None, std_answer=None, doubt
                 {
                     "role": "system",
                     "content": (
-                        "You are a mathematician and educator dedicated to resolving doubts about math solutions. "
-                        "Provide clear, step-by-step explanations to logically address each doubt. "
+                        "You are a mathematician and educator dedicated to resolving confusions about math solutions. "
+                        "Provide clear, step-by-step explanations to logically address each confusion. "
                     )
                 },
                 {
@@ -58,8 +58,8 @@ def construct_messages(dataset_type, step, question=None, std_answer=None, doubt
                     "content": (
                         f"Math Problem: {question}\n"
                         f"Solution: {std_answer}\n\n\n"
-                        f"Doubts about the solution: {doubts}\n\n"
-                        "Please address the doubts.\n\n"
+                        f"Confusions about the solution: {confusion}\n\n"
+                        "Please address the confusions.\n\n"
                     )
                 }
             ]
@@ -81,11 +81,11 @@ def save_partial_results(file_path, data, append=False):
 def process_record(api_base, llm_model, dataset_type, step, record):
     question = record.get("input", record.get("q"))
     std_answer = record.get("output", record.get("a_std"))
-    doubts = record.get("t", None)
+    confusion = record.get("t", None)
     idx = record.get("idx", None)
 
     try:
-        messages = construct_messages(dataset_type, step, question=question, std_answer=std_answer, doubts=doubts)
+        messages = construct_messages(dataset_type, step, question=question, std_answer=std_answer, confusion=confusion)
         response = chat_completion(api_base, llm_model, messages, max_tokens=2048, temperature=0.7)
     except Exception as e:
         response = f"[LLM Error] {str(e)}"
@@ -93,7 +93,7 @@ def process_record(api_base, llm_model, dataset_type, step, record):
     if step == 1:
         result = {"idx": idx, "q": question, "a_std": std_answer, "t": response}
     elif step == 2:
-        result = {"idx": idx, "q": question, "a_std": std_answer, "t": doubts, "response": response}
+        result = {"idx": idx, "q": question, "a_std": std_answer, "t": confusion, "response": response}
     return result
 
 def refine_list(data_list, jsonl_path):

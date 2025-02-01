@@ -1,0 +1,226 @@
+type2 original:
+        if step == 1:
+            return [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations. "
+                        "Break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": question
+                }
+            ]
+
+
+        elif step == 2:
+            return [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an AI assistant. You will read the math problem and a solution provided by another AI assistant. "
+                        "If you have any questions or confusions about the solution, ask specific questions about those parts."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"Math Problem: {question}\n"
+                        f"Here is the solution:\n{answer}\n\n"
+                        "List at most 3 specific questions about this solution."
+                    )
+                }
+            ]
+            
+        elif step == 3:
+            return [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a mathematician and educator dedicated to resolving confusions about math solutions. "
+                        "Provide clear, step-by-step explanations to logically address each confusion. "
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": question
+                },
+                {
+                    "role": "assistant",
+                    "content": answer
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"Confusions about the solution: {confusion}\n\n"
+                        "Please address the confusions.\n\n"
+                    )
+                }
+            ]
+
+type2 unlimit:
+        if step == 1:
+            return [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations. "
+                        "Break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": question
+                }
+            ]
+
+
+        elif step == 2:
+            return [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an AI assistant. You will read the math problem and a solution provided by another AI assistant. "
+                        "If you have any questions or confusions about the solution, ask specific questions about those parts."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"Math Problem: {question}\n"
+                        f"Here is the solution:\n{answer}\n\n"
+                        "If you have any questions or confusions about the solution, please list them."
+                    )
+                }
+            ]
+            
+        elif step == 3:
+            return [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a mathematician and educator dedicated to resolving confusions about math solutions. "
+                        "Provide clear, step-by-step explanations to logically address each confusion. "
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": question
+                },
+                {
+                    "role": "assistant",
+                    "content": answer
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"Confusions about the solution: {confusion}\n\n"
+                        "Please address the confusions.\n\n"
+                    )
+                }
+            ]
+
+
+
+Type3 original:
+        if step == 1:
+            return [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an AI assistant. You will read a correct solution to the following math problem. "
+                        "If you have any questions or confusions about the solution, please ask specific questions regarding those parts."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"Math Problem: {question}\n"
+                        f"Here is the solution:\n{std_answer}\n\n"
+                        "List at most 3 specific questions about this solution."
+                    )
+                }
+            ]
+
+
+
+
+        # --------------------------- Step 2 ---------------------------
+        elif step == 2:
+            return [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a mathematician and educator dedicated to resolving confusions about math solutions. "
+                        "Provide clear, step-by-step explanations to logically address each confusion. "
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"Math Problem: {question}\n"
+                        f"Solution: {std_answer}\n\n\n"
+                        f"Confusions about the solution: {confusion}\n\n"
+                        "Please address the confusions.\n\n"
+                    )
+                }
+            ]
+
+Type3 unlimit:
+        if step == 1:
+            return [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an AI assistant. You will read a correct solution to the following math problem. "
+                        "If you have any questions or confusions about the solution, please ask specific questions regarding those parts."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"Math Problem: {question}\n"
+                        f"Here is the solution:\n{std_answer}\n\n"
+                        "If you have any questions or confusions about the solution, please list them."
+                    )
+                }
+            ]
+
+
+
+
+
+        # --------------------------- Step 2 ---------------------------
+        elif step == 2:
+            return [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a mathematician and educator dedicated to resolving confusions about math solutions. "
+                        "Provide clear, step-by-step explanations to logically address each confusion. "
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"Math Problem: {question}\n"
+                        f"Solution: {std_answer}\n\n\n"
+                        f"Confusions about the solution: {confusion}\n\n"
+                        "Please address the confusions.\n\n"
+                    )
+                }
+            ]
+
+
+训练：
+            
+            final_input = (
+                "You are a mathematician and educator dedicated to resolving confusions about math solutions. "
+                "Provide clear, step-by-step explanations to logically address each confusion.\n\n"
+                f"Math Problem: {question}\n"
+                f"Solution: {answer}\n\n\n"
+                f"Confusions about the solution: {confusion}\n\n"
+                "Please address the confusions.\n\n"
+            )

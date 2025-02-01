@@ -52,7 +52,7 @@ def construct_messages(dataset_type, step, question=None, answer=None, confusion
                     "content": (
                         f"Math Problem: {question}\n"
                         f"Here is the solution:\n{answer}\n\n"
-                        "List at most 3 specific questions about this solution."
+                        "If you have any questions or confusions about the solution, please list them."
                     )
                 }
             ]

@@ -13,15 +13,17 @@ import os
 def get_training_data(input_file, output_file):
     processed_data = []
     llm_ignore_data = []
-
+    istype2 = True
     for record in read_jsonl(input_file):
         idx = record.get("idx")
         question = record.get("q", "")
         if "a_std" in record:
+            istype2 = False
             answer = record.get("a_std", "")
         elif "a" in record:
+            istype2 = True
             answer = record.get("a", "")
-        doubts = record.get("t", "")
+        confusion = record.get("t", "")
         response = record.get("response", "")
 
         if "[LLM Error]" in response:
@@ -37,12 +39,12 @@ def get_training_data(input_file, output_file):
             )
             
             final_input = (
-                "You are a mathematician and educator dedicated to resolving doubts about math solutions. "
-                "Provide clear, step-by-step explanations to logically address each doubt.\n\n"
+                "You are a mathematician and educator dedicated to resolving confusions about math solutions. "
+                "Provide clear, step-by-step explanations to logically address each confusion.\n\n"
                 f"Math Problem: {question}\n"
                 f"Solution: {answer}\n\n\n"
-                f"Doubts about the solution: {doubts}\n\n"
-                "Please address the doubts.\n\n"
+                f"Confusions about the solution: {confusion}\n\n"
+                "Please address the confusions.\n\n"
             )
             
             final_output = response

@@ -27,14 +27,14 @@ def construct_messages(dataset_type, step, question=None, std_answer=None, confu
                     "role": "system",
                     "content": (
                         "You are an AI assistant. You will read a correct solution to the following math problem. "
-                        "If you have any questions or confusions about the solution, please ask specific questions regarding those parts."
+                        "If you have any questions or confusions about the correct solution, please ask specific questions regarding those parts."
                     )
                 },
                 {
                     "role": "user",
                     "content": (
                         f"Math Problem: {question}\n"
-                        f"Here is the solution:\n{std_answer}\n\n"
+                        f"Here is the correct solution:\n{std_answer}\n\n"
                         "List at most 3 specific questions about this solution."
                     )
                 }
@@ -49,7 +49,7 @@ def construct_messages(dataset_type, step, question=None, std_answer=None, confu
                 {
                     "role": "system",
                     "content": (
-                        "You are a mathematician and educator dedicated to resolving confusions about math solutions. "
+                        "You are a mathematician and educator dedicated to resolving confusions about correct math solutions. "
                         "Provide clear, step-by-step explanations to logically address each confusion. "
                     )
                 },
@@ -57,7 +57,7 @@ def construct_messages(dataset_type, step, question=None, std_answer=None, confu
                     "role": "user",
                     "content": (
                         f"Math Problem: {question}\n"
-                        f"Solution: {std_answer}\n\n\n"
+                        f"Correct Solution: {std_answer}\n\n\n"
                         f"Confusions about the solution: {confusion}\n\n"
                         "Please address the confusions.\n\n"
                     )

@@ -38,15 +38,24 @@ def get_training_data(input_file, output_file):
                 }
             )
             
-            final_input = (
-                "You are a mathematician and educator dedicated to resolving confusions about math solutions. "
-                "Provide clear, step-by-step explanations to logically address each confusion.\n\n"
-                f"Math Problem: {question}\n"
-                f"Solution: {answer}\n\n\n"
-                f"Confusions about the solution: {confusion}\n\n"
-                "Please address the confusions.\n\n"
-            )
-            
+            if istype2:
+                final_input = (
+                    "You are a mathematician and educator dedicated to resolving confusions about math solutions. "
+                    "Provide clear, step-by-step explanations to logically address each confusion.\n\n"
+                    f"Math Problem: {question}\n"
+                    f"Solution: {answer}\n\n\n"
+                    f"Confusions about the solution: {confusion}\n\n"
+                    "Please address the confusions.\n\n"
+                )
+            else:
+                final_input = (
+                    "You are a mathematician and educator dedicated to resolving confusions about correct math solutions. "
+                    "Provide clear, step-by-step explanations to logically address each confusion.\n\n"
+                    f"Math Problem: {question}\n"
+                    f"Correct Solution: {answer}\n\n\n"
+                    f"Confusions about the solution: {confusion}\n\n"
+                    "Please address the confusions.\n\n"
+                )
             final_output = response
                  
             processed_data.append(

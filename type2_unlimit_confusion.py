@@ -43,7 +43,7 @@ def construct_messages(dataset_type, step, question=None, answer=None, confusion
                 {
                     "role": "system",
                     "content": (
-                        "You are an AI assistant. You will read the math problem and a solution provided by another AI assistant. "
+                        "You are a math student. You will read the math problem and a solution provided by your math teacher. "
                         "If you have any questions or confusions about the solution, ask specific questions about those parts."
                     )
                 },
@@ -52,6 +52,7 @@ def construct_messages(dataset_type, step, question=None, answer=None, confusion
                     "content": (
                         f"Math Problem: {question}\n"
                         f"Here is the solution:\n{answer}\n\n"
+                        "You are a math student. You will read the math problem and a solution provided by your math teacher. "
                         "If you have any questions or confusions about the solution, please list them."
                     )
                 }

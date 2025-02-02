@@ -6,7 +6,7 @@ import logging
 import time
 import re
 
-logging.basicConfig(level=logging.WARNING, filename=f'type3_with_self_rerun_{time.strftime("%d_%H_%M_%S")}.log', filemode='a',
+logging.basicConfig(level=logging.WARNING, filename=f'type3_unlimit_{time.strftime("%d_%H_%M_%S")}.log', filemode='a',
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ def construct_messages(dataset_type, step, question=None, std_answer=None, confu
                 {
                     "role": "system",
                     "content": (
-                        "You are an AI assistant. You will read a correct solution to the following math problem. "
+                        "You are a math student. You will read a correct solution to the following math problem. "
                         "If you have any questions or confusions about the correct solution, please ask specific questions regarding those parts."
                     )
                 },
@@ -35,6 +35,7 @@ def construct_messages(dataset_type, step, question=None, std_answer=None, confu
                     "content": (
                         f"Math Problem: {question}\n"
                         f"Here is the correct solution:\n{std_answer}\n\n"
+                        "You are a math student. You will read a correct solution to the following math problem. "
                         "If you have any questions or confusions about the solution, please list them."
                     )
                 }

@@ -6,7 +6,7 @@ import time
 import logging
 import re
 
-logging.basicConfig(level=logging.WARNING, filename=f'type2_with_self_rerun_{time.strftime("%d_%H_%M_%S")}.log', filemode='a',
+logging.basicConfig(level=logging.WARNING, filename=f'type2_unlimit_{time.strftime("%d_%H_%M_%S")}.log', filemode='a',
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 

@@ -30,27 +30,36 @@ def get_training_data(input_file, output_file):
             llm_ignore_data.append(record)
             continue
         else:
+            this_sys = (
+                        "You are a mathematician and educator. Solve the following math problem with accurate, complete, and clear explanations. "
+                        "Break down your reasoning into a logical chain of steps, and provide the final answer only after completing the reasoning."
+                    )
             processed_data.append(
                 {
                     'idx': idx,
+                    'system': this_sys,
                     'input': question,
                     'output': answer
                 }
             )
             
             if istype2:
-                final_input = (
+                final_system = (
                     "You are a mathematician and educator dedicated to resolving confusions about math solutions. "
-                    "Provide clear, step-by-step explanations to logically address each confusion.\n\n"
+                    "Provide clear, step-by-step explanations to logically address each confusion."
+                )
+                final_input = (
                     f"Math Problem: {question}\n"
                     f"Solution: {answer}\n\n\n"
                     f"Confusions about the solution: {confusion}\n\n"
                     "Please address the confusions.\n\n"
                 )
             else:
-                final_input = (
+                final_system = (
                     "You are a mathematician and educator dedicated to resolving confusions about correct math solutions. "
-                    "Provide clear, step-by-step explanations to logically address each confusion.\n\n"
+                    "Provide clear, step-by-step explanations to logically address each confusion."
+                )
+                final_input = (
                     f"Math Problem: {question}\n"
                     f"Correct Solution: {answer}\n\n\n"
                     f"Confusions about the solution: {confusion}\n\n"
@@ -61,6 +70,7 @@ def get_training_data(input_file, output_file):
             processed_data.append(
                 {
                     'idx': idx,
+                    'system': final_system,
                     'input': final_input,
                     'output': final_output
                 }

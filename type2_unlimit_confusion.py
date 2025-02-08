@@ -188,7 +188,10 @@ def main():
         stop_vllm_server(process_llm1)
         # Step 2: <q, a> -> LLM2 -> t
         logger.warning("[INFO] Step2: <q, a> -> LLM2 -> t")
-        process_llm2 = start_vllm_server(args.llm2_model, args.llm2_name, args.port2, args.gpu)
+        llm2_gpu_num = args.gpu
+        if "Qwen2.5-7B" in args.llm2_model:
+            llm2_gpu_num = 4
+        process_llm2 = start_vllm_server(args.llm2_model, args.llm2_name, args.port2, llm2_gpu_num)
         step2_file = f"{output_folder_path}/type2_step2_{os.path.basename(args.input_jsonl)}"
         step2_data = []
         step1_data_reloaded = list(read_jsonl(step1_file))
@@ -196,7 +199,11 @@ def main():
         
         # Load existing output JSONL if it exists
         step1_data_reloaded = refine_list(step1_data_reloaded, step2_file)
-        with ThreadPoolExecutor(max_workers=args.threads) as executor:
+        
+        num_max_workers = args.threads
+        if "Qwen2.5-7B" in args.llm2_model:
+            num_max_workers = 32
+        with ThreadPoolExecutor(max_workers=num_max_workers) as executor:
             futures = [executor.submit(process_record, api_base_llm2, args.llm2_name, args.dataset_type, 2, record) for record in step1_data_reloaded]
             for i, future in enumerate(futures, start=1):
                 step2_data.append(future.result())

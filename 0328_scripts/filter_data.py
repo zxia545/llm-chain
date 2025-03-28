@@ -38,20 +38,46 @@ def construct_eval_user_prompt(data_entry):
     )
     return prompt
 
+import json
+import re
+
 def extract_score(response_text):
     """
-    Attempt to parse the LLM's response as JSON and extract the score and explanation.
-    Returns (score, explanation) if valid; otherwise, (None, "").
+    Attempt to extract the score and explanation from the LLM's response.
+    First, try to parse the response as JSON. If that fails, use a regex to extract a score from
+    a pattern like: "score": xx,
+    Returns (score, explanation) if a valid score (1-5) is found; otherwise, (None, "").
     """
+    # Try parsing as JSON
     try:
         eval_dict = json.loads(response_text)
         score = eval_dict.get("score")
         explanation = eval_dict.get("explanation", "")
-        if isinstance(score, int) and 1 <= score <= 5:
-            return score, explanation
+        if isinstance(score, int):
+            if 1 <= score <= 5:
+                return score, explanation
+        elif isinstance(score, str):
+            try:
+                score_val = int(score.strip())
+                if 1 <= score_val <= 5:
+                    return score_val, explanation
+            except Exception:
+                pass
     except Exception:
         pass
+
+    # Fallback: use regex to search for pattern like "score": xx,
+    match = re.search(r'"score"\s*:\s*(\d+)', response_text)
+    if match:
+        try:
+            score_val = int(match.group(1))
+            if 1 <= score_val <= 5:
+                return score_val, ""
+        except Exception:
+            pass
+
     return None, ""
+
 
 def process_item(data_item, api_base, model_name, max_tokens=256, temperature=0.7, max_retries=10):
     """
